@@ -6,6 +6,7 @@ const cliTruncate = require('cli-truncate')
 const chalk       = require('chalk')
 const osTmpdir    = require('os-tmpdir')
 const fs          = require('fs')
+// const debug       = require('depurar')('scrolex')
 const spawn       = require('child_process').spawn
 const _           = require('lodash')
 
@@ -35,11 +36,11 @@ class Scrolex {
     })
   }
 
-  _defaults (opts, prioDefaults = {}) {
-    opts = _.defaultsDeep(opts, prioDefaults, {
+  _defaults (inOpts = {}, prioDefaults = {}) {
+    const outOpts = _.defaultsDeep({}, inOpts, prioDefaults, {
       'addCommandAsComponent': false,
       'announce'             : true,
-      'cbPreLinefeed'        : (type, line, {flush = false, status = undefined}, callback) => { return callback(null, line) },
+      'cbPreLinefeed'        : (type, line, { flush = false, status = undefined }, callback) => { return callback(null, line) },
       'cleanupTmpFiles'      : true,
       'components'           : [],
       'cwd'                  : process.cwd(),
@@ -50,7 +51,10 @@ class Scrolex {
         'stderr': `${osTmpdir()}/scrolex-%showCommand%-stderr-%pid%.log`,
       },
     })
+
+    return outOpts
   }
+
   _normalize (opts) {
     if (`${opts.components}` === opts.components) {
       opts.components = opts.components.split('/')
@@ -113,13 +117,18 @@ class Scrolex {
     const child     = spawn(cmd, modArgs, spawnOpts)
     const pid       = child.pid
 
+    // Put the PID into the file locations as a late normalization step
     this._withTypes(this._opts.tmpFiles, (val, type) => {
-      this._filebufWrite(type, '')
       return val.replace('%pid%', pid).replace('%showCommand%', showCommand)
     })
 
-    this._withTypes(child, (val, type) => {
-      val.on('data', this._collect.bind(this, type))
+    // Reset/empty out files
+    this._withTypes(this._opts.tmpFiles, (val, type) => {
+      this._filebufWrite(type, '')
+    })
+
+    this._withTypes(child, (stream, type) => {
+      stream.on('data', this._collect.bind(this, type))
     })
 
     child.on('close', (status, signal) => {
@@ -291,8 +300,9 @@ class Scrolex {
   }
 
   _return ({ status, error }) {
-    this._types.forEach((type) => {
-      this._results[type] = this._filebufRead(type)
+    const results = { stdout: '', stderr: '' }
+    this._withTypes(results, (val, type) => {
+      val = this._filebufRead(type)
       this._filebufUnlink(type)
     })
 
@@ -300,21 +310,21 @@ class Scrolex {
     if (status !== 0) {
       let msgs = [ `Fault while executing "${this._fullcmd}"` ]
 
-      if (this._results.stderr) {
-        msgs.push(this._results.stderr)
+      if (results.stderr) {
+        msgs.push(results.stderr)
       }
 
       if (msgs.length === 1) {
         msgs.push(`Exit code: ${status}`)
-        if (this._results.stdout) {
-          msgs.push(`\n\n${this._results.stdout}\n\n`)
+        if (results.stdout) {
+          msgs.push(`\n\n${results.stdout}\n\n`)
         }
       }
 
       err = new Error(msgs.join('. '))
     }
 
-    let out = this._results.stdout.trim()
+    let out = results.stdout.trim()
 
     const flush = true
     this._outputMembuffer('stdout', { flush, status })
@@ -332,7 +342,4 @@ class Scrolex {
   }
 }
 
-module.exports = (args, opts, cb) => {
-  const exec = new Scrolex()
-  return exec.exe(args, opts, cb)
-}
+module.exports = Scrolex
