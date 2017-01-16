@@ -6,12 +6,12 @@ const cliTruncate = require('cli-truncate')
 const chalk       = require('chalk')
 const osTmpdir    = require('os-tmpdir')
 const fs          = require('fs')
-// const debug       = require('depurar')('scrolex')
+const debug       = require('depurar')('scrolex')
 const spawn       = require('child_process').spawn
 const _           = require('lodash')
 
 class Scrolex {
-  constructor () {
+  constructor (origArgs, opts, cb) {
     this._fullcmd = null
     this._cmd     = null
     this._opts    = null
@@ -135,14 +135,12 @@ class Scrolex {
       this._return({ status, signal })
     })
 
-    if (this._cb) {
-      return
+    if (!this._cb) {
+      return new Promise((resolve, reject) => {
+        this._reject  = reject
+        this._resolve = resolve
+      })
     }
-
-    return new Promise((resolve, reject) => {
-      this._reject  = reject
-      this._resolve = resolve
-    })
   }
 
   scrollerWrite (line) {
@@ -195,16 +193,18 @@ class Scrolex {
       fs.writeFileSync(this._opts.tmpFiles[type], data, 'utf-8')
     }
   }
+  _filebufReadAndUnlink (type) {
+    if (this._opts.tmpFiles[type]) {
+      const buf = fs.readFileSync(this._opts.tmpFiles[type], 'utf-8')
+      if (this._opts.cleanupTmpFiles === true) {
+        fs.unlinkSync(this._opts.tmpFiles[type])
+      }
+      return buf
+    }
+  }
   _filebufRead (type) {
     if (this._opts.tmpFiles[type]) {
       return fs.readFileSync(this._opts.tmpFiles[type], 'utf-8')
-    }
-  }
-  _filebufUnlink (type, data) {
-    if (this._opts.cleanupTmpFiles === true) {
-      if (this._opts.tmpFiles[type]) {
-        fs.unlinkSync(this._opts.tmpFiles[type])
-      }
     }
   }
 
@@ -302,8 +302,7 @@ class Scrolex {
   _return ({ status, error }) {
     const results = { stdout: '', stderr: '' }
     this._withTypes(results, (val, type) => {
-      val = this._filebufRead(type)
-      this._filebufUnlink(type)
+      return this._filebufReadAndUnlink(type)
     })
 
     let err = null
@@ -342,4 +341,9 @@ class Scrolex {
   }
 }
 
-module.exports = Scrolex
+module.exports.Scrolex = Scrolex
+
+module.exports.exe = (args, opts, cb) => {
+  const s = new Scrolex()
+  return s.exe(args, opts, cb)
+}

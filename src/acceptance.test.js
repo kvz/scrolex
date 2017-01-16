@@ -1,19 +1,20 @@
 require('babel-polyfill')
-const scrolex  = require('./scrolex')
-const test     = require('ava')
+const scrolex = require('./Scrolex').exe
+const test    = require('ava')
 // const debug = require('depurar')('sut')
 
 test.cb('callback', (t) => {
-  scrolex(`MOCK_ERROR_OUT=0 MOCK_LIMIT=2 node ${__dirname}/fakecmd.js`, { singlescroll: true, components: 'lanyon/postinstall' }, (err, out) => {
+  scrolex(`MOCK_ERROR_OUT=0 MOCK_LIMIT=2 node ${__dirname}/fakecmd.js`, { singlescroll: false, components: 'lanyon/postinstall' }, (err, out) => {
     t.ifError(err, 'should respond without error')
-    // t.regex(response.text, /Hi mock-friend!/, 'response should match "Hi mock-friend!"')
+    t.regex(out, /Doing thing 2/, 'output should match: Doing thing 2')
     t.end()
   })
 })
 
 test.cb('sync-no-error', (t) => {
   ;(async function () {
-    await scrolex(`MOCK_ERROR_OUT=0 MOCK_LIMIT=2 node ${__dirname}/fakecmd.js`, { singlescroll: true, components: 'lanyon/postinstall' })
+    let out = await scrolex(`MOCK_ERROR_OUT=0 MOCK_LIMIT=2 node ${__dirname}/fakecmd.js`, { singlescroll: true, components: 'lanyon/postinstall' })
+    t.regex(out, /Doing thing 2/, 'output should match: Doing thing 2')
     t.end()
   }())
 })
@@ -22,10 +23,11 @@ test.cb('sync-catch-error', (t) => {
   ;(async function () {
     try {
       await scrolex(`MOCK_ERROR_OUT=1 MOCK_LIMIT=1 node ${__dirname}/fakecmd.js`, { singlescroll: true, components: 'lanyon/postinstall' })
-    } catch (err) {
+    } catch (e) {
+      t.pass()
+      t.end()
     }
-
-    // @todo fail if err wasn't thrown & caught
+    t.fail()
     t.end()
   }())
 })
@@ -33,12 +35,12 @@ test.cb('sync-catch-error', (t) => {
 test.cb('promise-catch-error', (t) => {
   scrolex(`MOCK_ERROR_OUT=1 MOCK_LIMIT=1 node ${__dirname}/fakecmd.js`, { singlescroll: true, components: 'lanyon/postinstall' })
     .then(() => {
-      // @todo fail
+      t.fail()
       t.end()
     })
     .catch((err) => {
-      // @todo pass
-      console.log(err)
+      t.regex(err.message, /Fault while executing/, 'err should should match: Fault while executing')
+      t.pass()
       t.end()
     })
 })

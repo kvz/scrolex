@@ -4,7 +4,7 @@
   "description": "Execute commands, scroll back the stdout &amp; stderr, prefix by user-defined categories",
   "main": "lib/acceptance.js",
   "scripts": {
-    "ava": "env NODE_ENV=test ava lib/**/*.test.js",
+    "ava": "env DEBUG=scrolex:* NODE_ENV=test ava --verbose lib/**/*.test.js",
     "build": "babel src --source-maps --out-dir lib",
     "fix": "eslint . --fix",
     "lint": "eslint .",

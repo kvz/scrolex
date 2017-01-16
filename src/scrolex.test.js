@@ -1,5 +1,5 @@
 require('babel-polyfill')
-const ScrolexMock = require('./ScrolexMock')
+const ScrolexMock = require('./ScrolexMock').ScrolexMock
 const sut         = new ScrolexMock()
 const test        = require('ava')
 // const debug    = require('depurar')('sut')
