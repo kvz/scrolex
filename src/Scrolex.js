@@ -1,4 +1,3 @@
-require('babel-polyfill')
 const logUpdate   = require('log-update')
 const cliSpinner  = require('cli-spinners').dots10
 const logSymbols  = require('log-symbols')
@@ -6,7 +5,7 @@ const cliTruncate = require('cli-truncate')
 const chalk       = require('chalk')
 const osTmpdir    = require('os-tmpdir')
 const fs          = require('fs')
-const debug       = require('depurar')('scrolex')
+// const debug       = require('depurar')('scrolex')
 const spawn       = require('child_process').spawn
 const _           = require('lodash')
 
@@ -90,7 +89,7 @@ class Scrolex {
     return spawnOpts
   }
 
-  async exe (origArgs, opts, cb) {
+  exe (origArgs, opts, cb) {
     let cmd         = ''
     let showCommand = ''
     let modArgs     = origArgs
@@ -111,7 +110,7 @@ class Scrolex {
 
     this._startAnimation()
     if (this._opts.announce === true) {
-      this._linefeed('stdout', `Executing: ${this._fullcmd}`)
+      this._outputLine('stdout', `Executing: ${this._fullcmd}`)
     }
     const spawnOpts = this._spawnOpts(opts)
     const child     = spawn(cmd, modArgs, spawnOpts)
@@ -128,7 +127,7 @@ class Scrolex {
     })
 
     this._withTypes(child, (stream, type) => {
-      stream.on('data', this._collect.bind(this, type))
+      stream.on('data', this._collectStream.bind(this, type))
     })
 
     child.on('close', (status, signal) => {
@@ -182,17 +181,18 @@ class Scrolex {
     if (!this._membuffers[type]) { this._membuffers[type] = '' }
     this._membuffers[type] += data
   }
+  _membufOutputLines (type, { flush = false, status = undefined } = {}) {
+    let line = ''
+    while ((line = this._membufShiftLine()) !== false) {
+      this._outputLine(type, line)
+    }
 
-  _filebufAppend (type, data) {
-    if (this._opts.tmpFiles[type]) {
-      fs.appendFileSync(this._opts.tmpFiles[type], data, 'utf-8')
+    if (flush) {
+      this._outputLine(type, this._membufRead(), { flush, status })
+      this._membufWrite(type, '')
     }
   }
-  _filebufWrite (type, data) {
-    if (this._opts.tmpFiles[type]) {
-      fs.writeFileSync(this._opts.tmpFiles[type], data, 'utf-8')
-    }
-  }
+
   _filebufReadAndUnlink (type) {
     if (this._opts.tmpFiles[type]) {
       const buf = fs.readFileSync(this._opts.tmpFiles[type], 'utf-8')
@@ -207,11 +207,21 @@ class Scrolex {
       return fs.readFileSync(this._opts.tmpFiles[type], 'utf-8')
     }
   }
+  _filebufWrite (type, data) {
+    if (this._opts.tmpFiles[type]) {
+      fs.writeFileSync(this._opts.tmpFiles[type], data, 'utf-8')
+    }
+  }
+  _filebufAppend (type, data) {
+    if (this._opts.tmpFiles[type]) {
+      fs.appendFileSync(this._opts.tmpFiles[type], data, 'utf-8')
+    }
+  }
 
-  _collect (type, data) {
+  _collectStream (type, data) {
     this._membufAppend(type, data)
     this._filebufAppend(type, data)
-    this._outputMembuffer(type)
+    this._membufOutputLines(type)
   }
 
   _startAnimation () {
@@ -222,18 +232,6 @@ class Scrolex {
       let frame = frames[i++ % frames.length]
       this._drawFrame.bind(that)(frame)
     }, cliSpinner.interval)
-  }
-
-  _outputMembuffer (type, { flush = false, status = undefined } = {}) {
-    let line = ''
-    while ((line = this._membufShiftLine()) !== false) {
-      this._linefeed(type, line)
-    }
-
-    if (flush) {
-      this._linefeed(type, this._membufRead(), { flush, status })
-      this._membufWrite(type, '')
-    }
   }
 
   _prefix () {
@@ -249,7 +247,7 @@ class Scrolex {
     return buf
   }
 
-  _linefeed (type, line, { flush = false, status = undefined } = {}) {
+  _outputLine (type, line, { flush = false, status = undefined } = {}) {
     this._opts.cbPreLinefeed.bind(this)(type, line, { flush, status }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
       if (modifiedLine) {
         this._lastLine = modifiedLine
@@ -326,8 +324,8 @@ class Scrolex {
     let out = results.stdout.trim()
 
     const flush = true
-    this._outputMembuffer('stdout', { flush, status })
-    this._outputMembuffer('stderr', { flush, status })
+    this._membufOutputLines('stdout', { flush, status })
+    this._membufOutputLines('stderr', { flush, status })
     this._stopAnimation()
 
     if (this._cb) {
@@ -341,9 +339,4 @@ class Scrolex {
   }
 }
 
-module.exports.Scrolex = Scrolex
-
-module.exports.exe = (args, opts, cb) => {
-  const s = new Scrolex()
-  return s.exe(args, opts, cb)
-}
+module.exports = Scrolex

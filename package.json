@@ -2,7 +2,7 @@
   "name": "scrolex",
   "version": "0.0.1",
   "description": "Execute commands, scroll back the stdout &amp; stderr, prefix by user-defined categories",
-  "main": "lib/acceptance.js",
+  "main": "lib/index.js",
   "scripts": {
     "ava": "env DEBUG=scrolex:* NODE_ENV=test ava --verbose lib/**/*.test.js",
     "build": "babel src --source-maps --out-dir lib",
@@ -13,6 +13,7 @@
     "release:minor": "env SEMANTIC=minor npm run release",
     "release:patch": "env SEMANTIC=patch npm run release",
     "release": "npm version ${SEMANTIC:-patch} -m \"Release %s\" && npm-run-all build push publish",
+    "playground": "env DEBUG=*:* babel-node src/playground.js",
     "test:acceptance": "npm run build && env DEBUG=*:* node lib/acceptance.js",
     "test:watcher": "npm test -- --watch",
     "test": "npm-run-all build ava",
