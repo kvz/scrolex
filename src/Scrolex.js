@@ -12,35 +12,21 @@ const _           = require('lodash')
 const uuidV4      = require('uuid/v4')
 
 class Scrolex {
-  constructor (origArgs, opts) {
-    this._fullcmd = null
-    this._cmd     = null
-    this._opts    = null
+  constructor (opts) {
+    this._timer       = null
+    this._lastPrefix  = null
+    this._lastLine    = null
+    this._lastShowCmd = null
+    this._membuffers  = {}
 
-    this._timer      = null
-    this._lastPrefix = null
-    this._lastLine   = null
-    this._membuffers = {}
+    this._reject      = null
+    this._resolve     = null
 
-    this._reject  = null
-    this._resolve = null
+    this.applyOpts(opts)
+  }
 
-    this._modArgs = origArgs
-
-    if (`${origArgs}` === origArgs) {
-      this._cmd     = 'sh'
-      this._showCmd = this._modArgs.split(/\s+/)[0]
-      this._modArgs = ['-c'].concat(this._modArgs)
-    } else {
-      this._cmd     = this._modArgs.pop()
-      this._showCmd = this._cmd
-    }
-
-    this._showCmd   = path.basename(this._showCmd)
-    this._fullcmd   = (_.isArray(origArgs) ? origArgs.join(' ') : origArgs)
-    this._cmd       = this._cmd
-    this._opts      = this._normalize(this._defaults(opts, { showCmd: this._showCmd }))
-    this._spawnOpts = this._spawnOpts(this._opts)
+  applyOpts (opts) {
+    this._opts = this._normalizeOpts(this._defaults(this._opts, opts))
   }
 
   _withTypes (obj, func) {
@@ -73,13 +59,9 @@ class Scrolex {
     return outOpts
   }
 
-  _normalize (opts) {
+  _normalizeOpts (opts) {
     if (`${opts.components}` === opts.components) {
       opts.components = opts.components.replace(/>>+/g, '>').split(/\s*>\s*/)
-    }
-
-    if (opts.addCommandAsComponent) {
-      opts.components.push(opts.showCmd)
     }
 
     if (opts.tmpFiles === false) {
@@ -87,6 +69,27 @@ class Scrolex {
     }
 
     return opts
+  }
+
+  _normalizeArgs (origArgs) {
+    let modArgs = origArgs
+    let cmd     = ''
+    let showCmd = ''
+    let fullCmd = ''
+
+    if (`${origArgs}` === origArgs) {
+      cmd     = 'sh'
+      showCmd = modArgs.split(/\s+/)[0]
+      modArgs = ['-c'].concat(modArgs)
+    } else {
+      cmd     = modArgs.pop()
+      showCmd = cmd
+    }
+
+    showCmd = path.basename(showCmd)
+    fullCmd = (_.isArray(origArgs) ? origArgs.join(' ') : origArgs)
+
+    return { modArgs, cmd, fullCmd, showCmd }
   }
 
   _spawnOpts (opts) {
@@ -108,7 +111,16 @@ class Scrolex {
     return spawnOpts
   }
 
-  exe (cb) {
+  out (str) {
+    this._outputLine('stdout', str)
+  }
+
+  exe (origArgs, cb) {
+    const { modArgs, cmd, fullCmd, showCmd } = this._normalizeArgs(origArgs)
+    const spawnOpts = this._spawnOpts(this._opts)
+
+    this._lastShowCmd = showCmd
+
     const promise = new Promise((resolve, reject) => {
       this._reject  = reject
       this._resolve = resolve
@@ -116,12 +128,12 @@ class Scrolex {
 
     this._startAnimation()
     if (this._opts.announce === true) {
-      this._outputLine('stdout', `Executing: ${this._fullcmd}`)
+      this._outputLine('stdout', `Executing: ${fullCmd}`)
     }
 
     // Put the PID into the file locations as a late normalization step
     this._withTypes(this._opts.tmpFiles, (val, type) => {
-      return val.replace('%uuid%', uuidV4()).replace('%showCmd%', this._showCmd)
+      return val.replace('%uuid%', uuidV4()).replace('%showCmd%', showCmd)
     })
 
     // Reset/empty out files
@@ -132,7 +144,7 @@ class Scrolex {
     if (this._opts.dryrun === true) {
       this._return({ status: 0, signal: null, pid: null, cb: cb })
     } else {
-      const child = spawn(this._cmd, this._modArgs, this._spawnOpts)
+      const child = spawn(cmd, modArgs, spawnOpts)
       const pid   = child.pid
 
       // Pipe data to collect functions
@@ -244,7 +256,14 @@ class Scrolex {
 
   _prefix () {
     let buf = ''
-    this._opts.components.forEach((component) => {
+
+    const components = this._opts.components
+
+    if (this._opts.addCommandAsComponent) {
+      components.push(this._lastShowCmd)
+    }
+
+    components.forEach((component) => {
       buf += `${chalk.dim(component)} \u276f `
     })
 
@@ -306,7 +325,7 @@ class Scrolex {
     this._timer = null
   }
 
-  _return ({ status, signal, pid, cb }) {
+  _return ({ status, signal, pid, cb, fullCmd }) {
     const results = { stdout: '', stderr: '' }
     this._withTypes(results, (val, type) => {
       return this._filebufReadAndUnlink(type)
@@ -314,7 +333,7 @@ class Scrolex {
 
     let err = null
     if (status !== 0) {
-      let msgs = [ `Fault while executing "${this._fullcmd}"` ]
+      let msgs = [ `Fault while executing "${fullCmd}"` ]
 
       if (results.stderr) {
         msgs.push(results.stderr)
