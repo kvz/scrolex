@@ -14,19 +14,19 @@ const indentString = require('indent-string')
 
 class Scrolex {
   constructor (opts) {
+    this._lastShowCmd  = null
+    this._membuffers   = {}
+    this._reject       = null
+    this._resolve      = null
+    this._frameCounter = 0
+    this._timer        = null
+    this._lastPrefix   = null
+    this._lastLine     = null
+
     this.applyOpts(opts)
   }
 
   applyOpts (opts) {
-    this._timer       = null
-    this._lastPrefix  = null
-    this._lastLine    = null
-    this._lastShowCmd = null
-    this._membuffers  = {}
-
-    this._reject      = null
-    this._resolve     = null
-
     this._opts = this._normalizeOpts(this._defaults(this._opts, opts))
   }
 
@@ -118,7 +118,7 @@ class Scrolex {
   }
 
   out (str) {
-    this._outputLine('stdout', str)
+    this._outputLine('stdout', str, { flush: true })
   }
 
   exe (origArgs, cb) {
@@ -255,11 +255,9 @@ class Scrolex {
   }
 
   _startAnimation () {
-    let i      = 0
-    let frames = cliSpinner.frames
-    let that   = this
+    let that = this
     this._timer = setInterval(() => {
-      let frame = frames[i++ % frames.length]
+      let frame = cliSpinner.frames[this._frameCounter++ % cliSpinner.frames.length]
       this._drawFrame.bind(that)(frame)
     }, cliSpinner.interval)
   }
@@ -304,24 +302,33 @@ class Scrolex {
     let prefix = this._prefix()
     let buff   = ''
 
-    const closeCategory = flush || (prefix !== this._lastPrefix && this._lastPrefix)
+    const closeCategory = flush === true || (prefix !== this._lastPrefix && this._lastPrefix != null)
     const openCategory  = (prefix !== this._lastPrefix)
+    this._lastPrefix    = prefix
 
     if (this._lastLine === null) {
       return
     }
 
     if (!frame) {
-      frame = cliSpinner.frames[0]
+      frame = cliSpinner.frames[this._frameCounter++ % cliSpinner.frames.length]
     }
     if (closeCategory) {
       frame = (status === 0 || status === undefined || status === null ? logSymbols.success : logSymbols.error)
     }
 
+    // console.log({_lastLine: this._lastLine})
+    // console.log({_lastPrefix: this._lastPrefix})
+    // console.log({frame, type, flush, prefix, status, openCategory, closeCategory})
+    // return
+
     if (this._opts.singlescroll === true) {
       let head = ` ${frame} ${prefix} `
       // buff += head + cliTruncate(this._lastLine.trim(), process.stdout.columns - head.length)
       buff += head + this._lastLine.trim()
+      if (openCategory) {
+        this.scrollerPersist()
+      }
       this.scrollerWrite(buff)
       if (closeCategory) {
         this.scrollerPersist()
@@ -342,8 +349,6 @@ class Scrolex {
         process[type].write('\n')
       }
     }
-
-    this._lastPrefix = prefix
   }
 
   _stopAnimation () {
