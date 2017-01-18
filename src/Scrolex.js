@@ -3,26 +3,44 @@ const cliSpinner  = require('cli-spinners').dots10
 const logSymbols  = require('log-symbols')
 const cliTruncate = require('cli-truncate')
 const chalk       = require('chalk')
+const path        = require('path')
 const osTmpdir    = require('os-tmpdir')
 const fs          = require('fs')
-// const debug       = require('depurar')('scrolex')
+// const debug    = require('depurar')('scrolex')
 const spawn       = require('child_process').spawn
 const _           = require('lodash')
+const uuidV4      = require('uuid/v4')
 
 class Scrolex {
-  constructor (origArgs, opts, cb) {
+  constructor (origArgs, opts) {
     this._fullcmd = null
     this._cmd     = null
     this._opts    = null
-    this._cb      = null
 
     this._timer      = null
     this._lastPrefix = null
-    this._lastLine   = ''
+    this._lastLine   = null
     this._membuffers = {}
 
     this._reject  = null
     this._resolve = null
+
+    this._modArgs = origArgs
+
+    if (`${origArgs}` === origArgs) {
+      this._cmd     = 'sh'
+      this._showCmd = this._modArgs.split(/\s+/)[0]
+      this._modArgs = ['-c'].concat(this._modArgs)
+    } else {
+      this._cmd     = this._modArgs.pop()
+      this._showCmd = this._cmd
+    }
+
+    this._showCmd   = path.basename(this._showCmd)
+    this._fullcmd   = (_.isArray(origArgs) ? origArgs.join(' ') : origArgs)
+    this._cmd       = this._cmd
+    this._opts      = this._normalize(this._defaults(opts, { showCmd: this._showCmd }))
+    this._spawnOpts = this._spawnOpts(this._opts)
   }
 
   _withTypes (obj, func) {
@@ -38,7 +56,8 @@ class Scrolex {
   _defaults (inOpts = {}, prioDefaults = {}) {
     const outOpts = _.defaultsDeep({}, inOpts, prioDefaults, {
       'addCommandAsComponent': false,
-      'announce'             : true,
+      'announce'             : false,
+      'dryrun'               : false,
       'cbPreLinefeed'        : (type, line, { flush = false, status = undefined }, callback) => { return callback(null, line) },
       'cleanupTmpFiles'      : true,
       'components'           : [],
@@ -46,8 +65,8 @@ class Scrolex {
       'passthru'             : true,
       'singlescroll'         : true,
       'tmpFiles'             : {
-        'stdout': `${osTmpdir()}/scrolex-%showCommand%-stdout-%pid%.log`,
-        'stderr': `${osTmpdir()}/scrolex-%showCommand%-stderr-%pid%.log`,
+        'stdout': `${osTmpdir()}/scrolex-%showCmd%-stdout-%uuid%.log`,
+        'stderr': `${osTmpdir()}/scrolex-%showCmd%-stderr-%uuid%.log`,
       },
     })
 
@@ -56,11 +75,11 @@ class Scrolex {
 
   _normalize (opts) {
     if (`${opts.components}` === opts.components) {
-      opts.components = opts.components.split('/')
+      opts.components = opts.components.replace(/>>+/g, '>').split(/\s*>\s*/)
     }
 
     if (opts.addCommandAsComponent) {
-      opts.components.push(opts.showCommand)
+      opts.components.push(opts.showCmd)
     }
 
     if (opts.tmpFiles === false) {
@@ -89,36 +108,20 @@ class Scrolex {
     return spawnOpts
   }
 
-  exe (origArgs, opts, cb) {
-    let cmd         = ''
-    let showCommand = ''
-    let modArgs     = origArgs
-
-    if (`${origArgs}` === origArgs) {
-      cmd         = 'sh'
-      showCommand = modArgs.split(/\s+/)[0]
-      modArgs     = ['-c'].concat(modArgs)
-    } else {
-      cmd         = modArgs.pop()
-      showCommand = cmd
-    }
-
-    this._fullcmd = (_.isArray(origArgs) ? origArgs.join(' ') : origArgs)
-    this._cmd     = cmd
-    this._opts    = this._normalize(this._defaults(opts, { showCommand }))
-    this._cb      = cb
+  exe (cb) {
+    const promise = new Promise((resolve, reject) => {
+      this._reject  = reject
+      this._resolve = resolve
+    })
 
     this._startAnimation()
     if (this._opts.announce === true) {
       this._outputLine('stdout', `Executing: ${this._fullcmd}`)
     }
-    const spawnOpts = this._spawnOpts(opts)
-    const child     = spawn(cmd, modArgs, spawnOpts)
-    const pid       = child.pid
 
     // Put the PID into the file locations as a late normalization step
     this._withTypes(this._opts.tmpFiles, (val, type) => {
-      return val.replace('%pid%', pid).replace('%showCommand%', showCommand)
+      return val.replace('%uuid%', uuidV4()).replace('%showCmd%', this._showCmd)
     })
 
     // Reset/empty out files
@@ -126,20 +129,25 @@ class Scrolex {
       this._filebufWrite(type, '')
     })
 
-    this._withTypes(child, (stream, type) => {
-      stream.on('data', this._collectStream.bind(this, type))
-    })
+    if (this._opts.dryrun === true) {
+      this._return({ status: 0, signal: null, pid: null, cb: cb })
+    } else {
+      const child = spawn(this._cmd, this._modArgs, this._spawnOpts)
+      const pid   = child.pid
 
-    child.on('close', (status, signal) => {
-      this._return({ status, signal })
-    })
+      // Pipe data to collect functions
+      this._withTypes(child, (stream, type) => {
+        stream.on('data', this._collectStream.bind(this, type))
+      })
 
-    if (!this._cb) {
-      return new Promise((resolve, reject) => {
-        this._reject  = reject
-        this._resolve = resolve
+      // Handle exit
+      child.on('close', (status, signal) => {
+        this._return({ status, signal, pid, cb })
       })
     }
+
+    // Return promise if callback was not provided
+    if (!cb) { return promise }
   }
 
   scrollerWrite (line) {
@@ -237,57 +245,58 @@ class Scrolex {
   _prefix () {
     let buf = ''
     this._opts.components.forEach((component) => {
-      buf += `${chalk.dim(component)} \u276f`
+      buf += `${chalk.dim(component)} \u276f `
     })
 
-    if (buf) {
-      buf += ' '
-    }
+    buf = buf.trim()
 
     return buf
   }
 
   _outputLine (type, line, { flush = false, status = undefined } = {}) {
-    this._opts.cbPreLinefeed.bind(this)(type, line, { flush, status }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
-      if (modifiedLine) {
-        this._lastLine = modifiedLine
-      }
-
+    this._opts.cbPreLinefeed(type, line, { flush, status }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
       if (this._opts.passthru === true) {
         if (this._opts.singlescroll === true) {
           // Force the animation of a frame, which triggers a scrollWrite()
           // so that we'll see the output immediately regardless of the animation interval
+          if (modifiedLine) {
+            this._lastLine = modifiedLine
+          }
           return this._drawFrame(undefined, { flush, status })
-        } else if (modifiedLine) {
+        } else {
           // Just write to stdout (or stderr)
-          return process[type].write(line)
+          return process[type].write(modifiedLine)
         }
       }
     })
   }
 
   _drawFrame (frame, { flush = false, status = undefined } = {}) {
+    const needsToPersist = flush || (prefix !== this._lastPrefix && this._lastPrefix)
     if (!frame) {
       frame = cliSpinner.frames[0]
     }
 
-    let prefix = this._prefix()
-    let line   = prefix + frame + ' '
-
-    line += cliTruncate(this._lastLine.trim(), process.stdout.columns - (line.length + (flush ? 2 : 0)))
+    if (this._lastLine === null) {
+      return
+    }
 
     if (flush) {
       if (status === 0) {
-        this.scrollerClear()
-        line = prefix + chalk.reset('') + logSymbols.success
+        frame = logSymbols.success
       } else {
-        line += logSymbols.error
+        frame = logSymbols.error
       }
     }
 
+    let prefix = this._prefix()
+    let line   = ` ${frame} ${prefix} `
+    line      += cliTruncate(this._lastLine.trim(), process.stdout.columns)
+
     this.scrollerWrite(line)
-    if (flush && prefix !== this._lastPrefix && this._lastPrefix !== null) {
+    if (needsToPersist) {
       this.scrollerPersist()
+      this._lastLine = null
     }
     this._lastPrefix = prefix
   }
@@ -297,7 +306,7 @@ class Scrolex {
     this._timer = null
   }
 
-  _return ({ status, error }) {
+  _return ({ status, signal, pid, cb }) {
     const results = { stdout: '', stderr: '' }
     this._withTypes(results, (val, type) => {
       return this._filebufReadAndUnlink(type)
@@ -328,8 +337,8 @@ class Scrolex {
     this._membufOutputLines('stderr', { flush, status })
     this._stopAnimation()
 
-    if (this._cb) {
-      return this._cb(err, out)
+    if (cb) {
+      return cb(err, out)
     }
 
     if (err) {
