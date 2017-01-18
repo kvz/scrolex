@@ -1,7 +1,7 @@
 const logUpdate    = require('log-update')
 const cliSpinner   = require('cli-spinners').dots10
 const logSymbols   = require('log-symbols')
-const cliTruncate  = require('cli-truncate')
+// const cliTruncate  = require('cli-truncate')
 const chalk        = require('chalk')
 const path         = require('path')
 const osTmpdir     = require('os-tmpdir')
@@ -14,6 +14,10 @@ const indentString = require('indent-string')
 
 class Scrolex {
   constructor (opts) {
+    this.applyOpts(opts)
+  }
+
+  applyOpts (opts) {
     this._timer       = null
     this._lastPrefix  = null
     this._lastLine    = null
@@ -23,10 +27,6 @@ class Scrolex {
     this._reject      = null
     this._resolve     = null
 
-    this.applyOpts(opts)
-  }
-
-  applyOpts (opts) {
     this._opts = this._normalizeOpts(this._defaults(this._opts, opts))
   }
 
@@ -287,7 +287,6 @@ class Scrolex {
   }
 
   _outputLine (type, line, { flush = false, status = undefined } = {}) {
-    // console.log(this.)
     if (this._opts.passthru !== true) {
       return
     }
@@ -302,6 +301,9 @@ class Scrolex {
   }
 
   _drawFrame (frame, { type = 'stdout', flush = false, status = undefined } = {}) {
+    let prefix = this._prefix()
+    let buff   = ''
+
     const closeCategory = flush || (prefix !== this._lastPrefix && this._lastPrefix)
     const openCategory  = (prefix !== this._lastPrefix)
 
@@ -315,9 +317,6 @@ class Scrolex {
     if (closeCategory) {
       frame = (status === 0 || status === undefined || status === null ? logSymbols.success : logSymbols.error)
     }
-
-    let prefix = this._prefix()
-    let buff   = ''
 
     if (this._opts.singlescroll === true) {
       let head = ` ${frame} ${prefix} `
