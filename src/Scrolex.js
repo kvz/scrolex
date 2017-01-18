@@ -1,15 +1,16 @@
-const logUpdate   = require('log-update')
-const cliSpinner  = require('cli-spinners').dots10
-const logSymbols  = require('log-symbols')
-const cliTruncate = require('cli-truncate')
-const chalk       = require('chalk')
-const path        = require('path')
-const osTmpdir    = require('os-tmpdir')
-const fs          = require('fs')
-// const debug    = require('depurar')('scrolex')
-const spawn       = require('child_process').spawn
-const _           = require('lodash')
-const uuidV4      = require('uuid/v4')
+const logUpdate    = require('log-update')
+const cliSpinner   = require('cli-spinners').dots10
+const logSymbols   = require('log-symbols')
+const cliTruncate  = require('cli-truncate')
+const chalk        = require('chalk')
+const path         = require('path')
+const osTmpdir     = require('os-tmpdir')
+const fs           = require('fs')
+// const debug     = require('depurar')('scrolex')
+const spawn        = require('child_process').spawn
+const _            = require('lodash')
+const uuidV4       = require('uuid/v4')
+const indentString = require('indent-string')
 
 class Scrolex {
   constructor (opts) {
@@ -39,8 +40,8 @@ class Scrolex {
     })
   }
 
-  _defaults (inOpts = {}, prioDefaults = {}) {
-    const outOpts = _.defaultsDeep({}, inOpts, prioDefaults, {
+  _defaults (opts = {}, prioOpts = {}) {
+    const outOpts = _.defaultsDeep({}, prioOpts, opts, {
       'addCommandAsComponent': false,
       'announce'             : false,
       'dryrun'               : false,
@@ -48,6 +49,7 @@ class Scrolex {
       'cleanupTmpFiles'      : true,
       'components'           : [],
       'cwd'                  : process.cwd(),
+      'indent'               : 4,
       'passthru'             : true,
       'singlescroll'         : true,
       'tmpFiles'             : {
@@ -62,6 +64,10 @@ class Scrolex {
   _normalizeOpts (opts) {
     if (`${opts.components}` === opts.components) {
       opts.components = opts.components.replace(/>>+/g, '>').split(/\s*>\s*/)
+    }
+
+    if (!opts.indent) {
+      opts.indent = 0
     }
 
     if (opts.tmpFiles === false) {
@@ -126,7 +132,9 @@ class Scrolex {
       this._resolve = resolve
     })
 
-    this._startAnimation()
+    if (this._opts.singlescroll === true) {
+      this._startAnimation()
+    }
     if (this._opts.announce === true) {
       this._outputLine('stdout', `Executing: ${fullCmd}`)
     }
@@ -177,13 +185,13 @@ class Scrolex {
     if (!this._membuffers[type]) { this._membuffers[type] = '' }
 
     let pos = this._membuffers[type].indexOf('\n')
+
     if (pos === -1) {
       return false
     }
 
     let line = this._membuffers[type].substr(0, pos + 1)
     this._membuffers[type] = this._membuffers[type].substr(pos + 1, this._membuffers[type].length - 1)
-
     return line
   }
   _membufRead (type) {
@@ -203,12 +211,14 @@ class Scrolex {
   }
   _membufOutputLines (type, { flush = false, status = undefined } = {}) {
     let line = ''
-    while ((line = this._membufShiftLine()) !== false) {
+    while ((line = this._membufShiftLine(type)) !== false) {
       this._outputLine(type, line)
     }
 
     if (flush) {
-      this._outputLine(type, this._membufRead(), { flush, status })
+      this._membufRead().split('\n').forEach((line) => {
+        this._outputLine(type, line, { flush, status })
+      })
       this._membufWrite(type, '')
     }
   }
@@ -263,6 +273,10 @@ class Scrolex {
       components.push(this._lastShowCmd)
     }
 
+    if (this._opts.singlescroll === false) {
+      buf += `\u276f `
+    }
+
     components.forEach((component) => {
       buf += `${chalk.dim(component)} \u276f `
     })
@@ -273,50 +287,63 @@ class Scrolex {
   }
 
   _outputLine (type, line, { flush = false, status = undefined } = {}) {
+    // console.log(this.)
+    if (this._opts.passthru !== true) {
+      return
+    }
+    if (!line) {
+      return
+    }
     this._opts.cbPreLinefeed(type, line, { flush, status }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
-      if (this._opts.passthru === true) {
-        if (this._opts.singlescroll === true) {
-          // Force the animation of a frame, which triggers a scrollWrite()
-          // so that we'll see the output immediately regardless of the animation interval
-          if (modifiedLine) {
-            this._lastLine = modifiedLine
-          }
-          return this._drawFrame(undefined, { flush, status })
-        } else {
-          // Just write to stdout (or stderr)
-          return process[type].write(modifiedLine)
-        }
-      }
+      this._lastLine = modifiedLine
+      // Force the animation of a frame or just write to stdout
+      this._drawFrame(undefined, { flush, status })
     })
   }
 
-  _drawFrame (frame, { flush = false, status = undefined } = {}) {
-    const needsToPersist = flush || (prefix !== this._lastPrefix && this._lastPrefix)
-    if (!frame) {
-      frame = cliSpinner.frames[0]
-    }
+  _drawFrame (frame, { type = 'stdout', flush = false, status = undefined } = {}) {
+    const closeCategory = flush || (prefix !== this._lastPrefix && this._lastPrefix)
+    const openCategory  = (prefix !== this._lastPrefix)
 
     if (this._lastLine === null) {
       return
     }
 
-    if (flush) {
-      if (status === 0) {
-        frame = logSymbols.success
-      } else {
-        frame = logSymbols.error
-      }
+    if (!frame) {
+      frame = cliSpinner.frames[0]
+    }
+    if (closeCategory) {
+      frame = (status === 0 || status === undefined || status === null ? logSymbols.success : logSymbols.error)
     }
 
     let prefix = this._prefix()
-    let line   = ` ${frame} ${prefix} `
-    line      += cliTruncate(this._lastLine.trim(), process.stdout.columns)
+    let buff   = ''
 
-    this.scrollerWrite(line)
-    if (needsToPersist) {
-      this.scrollerPersist()
-      this._lastLine = null
+    if (this._opts.singlescroll === true) {
+      let head = ` ${frame} ${prefix} `
+      // buff += head + cliTruncate(this._lastLine.trim(), process.stdout.columns - head.length)
+      buff += head + this._lastLine.trim()
+      this.scrollerWrite(buff)
+      if (closeCategory) {
+        this.scrollerPersist()
+        this._lastLine = null
+      }
+    } else {
+      let tail = ''
+      if (closeCategory) {
+        tail = ` ${frame}`
+      }
+      // Just write to stdout (or stderr)
+      buff += indentString(this._lastLine.trim(), this._opts.indent)
+      if (openCategory) {
+        process[type].write(`${prefix}\n\n`)
+      }
+      process[type].write(`${buff}${tail}\n`)
+      if (closeCategory) {
+        process[type].write('\n')
+      }
     }
+
     this._lastPrefix = prefix
   }
 
@@ -354,7 +381,9 @@ class Scrolex {
     const flush = true
     this._membufOutputLines('stdout', { flush, status })
     this._membufOutputLines('stderr', { flush, status })
-    this._stopAnimation()
+    if (this._opts.singlescroll === true) {
+      this._stopAnimation()
+    }
 
     if (cb) {
       return cb(err, out)
@@ -363,6 +392,7 @@ class Scrolex {
     if (err) {
       return this._reject(err)
     }
+
     this._resolve(out)
   }
 }

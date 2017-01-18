@@ -6,6 +6,7 @@
   "scripts": {
     "ava": "env DEBUG=scrolex:* NODE_ENV=test ava --verbose lib/**/*.test.js",
     "build": "babel src --source-maps --out-dir lib",
+    "build:watch": "babel src --watch --source-maps --out-dir lib",
     "fix": "eslint . --fix",
     "lint": "eslint .",
     "push": "git push && git push --tags",
@@ -36,6 +37,7 @@
     "cli-spinners": "1.0.0",
     "cli-truncate": "0.2.1",
     "depurar": "0.3.0",
+    "indent-string": "^3.0.0",
     "lodash": "4.17.4",
     "log-symbols": "1.0.2",
     "log-update": "1.0.2",
