@@ -299,12 +299,11 @@ class Scrolex {
   }
 
   _drawFrame (frame, { type = 'stdout', flush = false, status = undefined } = {}) {
-    let prefix = this._prefix()
-    let buff   = ''
-
-    const closeCategory = flush === true || (prefix !== this._lastPrefix && this._lastPrefix != null)
-    const openCategory  = (prefix !== this._lastPrefix)
-    this._lastPrefix    = prefix
+    let prefix        = this._prefix()
+    let buff          = ''
+    let closeCategory = flush === true || (prefix !== this._lastPrefix && this._lastPrefix != null)
+    let openCategory  = (prefix !== this._lastPrefix)
+    this._lastPrefix  = prefix
 
     if (this._lastLine === null) {
       return
