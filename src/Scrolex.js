@@ -14,14 +14,16 @@ const indentString = require('indent-string')
 
 class Scrolex {
   constructor (opts) {
-    this._lastShowCmd  = null
-    this._membuffers   = {}
-    this._reject       = null
-    this._resolve      = null
-    this._frameCounter = 0
-    this._timer        = null
-    this._lastPrefix   = null
-    this._lastLine     = null
+    this._lastShowCmd            = null
+    this._membuffers             = {}
+    this._reject                 = null
+    this._resolve                = null
+    this._frameCounter           = 0
+    this._timer                  = null
+    this._lastPrefix             = null
+    this._lastLine               = null
+    this._lastLinePersistedIndex = null
+    this._lastLineIndex          = 0
 
     this.applyOpts(opts)
   }
@@ -73,6 +75,11 @@ class Scrolex {
 
     if (opts.tmpFiles === false) {
       this._withTypes(opts.tmpFiles, (val, type) => { return false }, [ 'stdout', 'stderr', 'combined' ])
+    }
+
+    let allowed = [ 'singlescroll', 'passthru' ]
+    if (allowed.indexOf(opts.mode) === -1) {
+      throw new Error(`Unrecognized options.mode: "${opts.mode}". Pick one of: "${allowed.join('", "')}". `)
     }
 
     return opts
@@ -299,22 +306,23 @@ class Scrolex {
     if (this._opts.mode !== 'passthru' && this._opts.mode !== 'singlescroll') {
       return
     }
-    if (!line) {
-      return
-    }
     this._opts.cbPreLinefeed(type, line, { flush, status }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
-      this._lastLine = modifiedLine
+      if (modifiedLine) {
+        this._lastLine = modifiedLine.trim()
+        this._lastLineIndex++
+      }
       // Force the animation of a frame or just write to stdout
       this._drawFrame(undefined, { flush, status })
     })
   }
 
   _drawFrame (frame, { type = 'stdout', flush = false, status = undefined } = {}) {
-    let prefix        = this._prefix()
-    let buff          = ''
-    let closeCategory = flush === true || (prefix !== this._lastPrefix && this._lastPrefix != null)
-    let openCategory  = (prefix !== this._lastPrefix)
-    this._lastPrefix  = prefix
+    let prefix                        = this._prefix()
+    let buff                          = ''
+    let freshCategory                 = (prefix !== this._lastPrefix)
+    let waitingForNewLineAfterPersist = (this._lastLinePersistedIndex >= this._lastLineIndex)
+
+    this._lastPrefix = prefix
 
     if (this._lastLine === null) {
       return
@@ -323,39 +331,48 @@ class Scrolex {
     if (!frame) {
       frame = cliSpinner.frames[this._frameCounter++ % cliSpinner.frames.length]
     }
-    if (closeCategory) {
+    if (flush && !waitingForNewLineAfterPersist) {
       frame = (status === 0 || status === undefined || status === null ? logSymbols.success : logSymbols.error)
     }
 
-    // console.log({_lastLine: this._lastLine})
-    // console.log({_lastPrefix: this._lastPrefix})
-    // console.log({frame, type, flush, prefix, status, openCategory, closeCategory})
-    // return
+    // if (flush) {
+    //   console.log({
+    //     _lastLine    : this._lastLine,
+    //     _lastPrefix  : this._lastPrefix,
+    //     flush        : flush,
+    //     frame        : frame,
+    //     freshCategory: freshCategory,
+    //     prefix       : prefix,
+    //     status       : status,
+    //     type         : type,
+    //   })
+    //   return
+    // }
 
     if (this._opts.mode === 'singlescroll') {
-      let head = ` ${frame} ${prefix} `
-      // buff += head + cliTruncate(this._lastLine.trim(), process.stdout.columns - head.length)
-      buff += head + this._lastLine.trim()
-      if (openCategory) {
-        this.scrollerPersist()
+      buff += ` ${frame} `
+      if (!waitingForNewLineAfterPersist) {
+        buff += prefix
+        buff += this._lastLine
       }
       this.scrollerWrite(buff)
-      if (closeCategory) {
+      if (flush && !waitingForNewLineAfterPersist) {
         this.scrollerPersist()
-        this._lastLine = null
+        this._lastLine = ''
+        this._lastLinePersistedIndex = this._lastLineIndex
       }
     } else {
       let tail = ''
-      if (closeCategory) {
+      if (flush) {
         tail = ` ${frame}`
       }
       // Just write to stdout (or stderr)
-      buff += indentString(this._lastLine.trim(), this._opts.indent)
-      if (openCategory) {
+      buff += indentString(this._lastLine, this._opts.indent)
+      if (freshCategory) {
         process[type].write(`${prefix}\n\n`)
       }
       process[type].write(`${buff}${tail}\n`)
-      if (closeCategory) {
+      if (flush) {
         process[type].write('\n')
       }
     }
