@@ -54,8 +54,8 @@ class Scrolex {
       'components'           : [],
       'cwd'                  : process.cwd(),
       'indent'               : 4,
-      'mode'                 : 'singlescroll',
-      // 'mode'                 : 'passthru',
+      'mode'                 : process.env.SCROLEX_MODE || 'singlescroll',
+      'interval'             : process.env.SCROLEX_INTERVAL || cliSpinner.interval,
       'tmpFiles'             : {
         'stdout'  : `${osTmpdir()}/scrolex-%showCmd%-stdout-%uuid%.log`,
         'stderr'  : `${osTmpdir()}/scrolex-%showCmd%-stderr-%uuid%.log`,
@@ -297,7 +297,7 @@ class Scrolex {
     this._timer = setInterval(() => {
       let frame = cliSpinner.frames[this._frameCounter++ % cliSpinner.frames.length]
       this._drawFrame.bind(that)(frame)
-    }, cliSpinner.interval)
+    }, this._opts.interval)
   }
 
   _prefix () {
@@ -372,7 +372,7 @@ class Scrolex {
     if (this._opts.mode === 'singlescroll') {
       buff += ` ${frame} `
       if (!waitingForNewLineAfterPersist) {
-        buff += prefix
+        buff += `${prefix} `
         buff += this._lastLine
       }
       this.scrollerWrite(buff)
