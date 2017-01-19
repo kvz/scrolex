@@ -17,8 +17,8 @@ test.serial.cb('promise-catch-error', (t) => {
       t.fail()
       t.end()
     })
-    .catch((err) => {
-      t.regex(err.message, /Fault while executing/, 'err should should match: Fault while executing')
+    .catch(({message}) => {
+      t.regex(message, /Fault while executing/, 'err should should match: Fault while executing')
       t.pass()
       t.end()
     })

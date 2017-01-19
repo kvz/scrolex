@@ -113,10 +113,10 @@ class Scrolex {
     return { modArgs, cmd, fullCmd, showCmd }
   }
 
-  _spawnOpts (opts) {
+  _spawnOpts ({env, shell, cwd, stdio}) {
     const spawnOpts = {}
-    if (opts.env !== undefined) {
-      spawnOpts.env = opts.env
+    if (env !== undefined) {
+      spawnOpts.env = env
     } else {
       spawnOpts.env = {
         DEBUG   : process.env.DEBUG,
@@ -126,9 +126,9 @@ class Scrolex {
         USER    : process.env.USER,
       }
     }
-    if (opts.shell !== undefined) spawnOpts.shell = opts.shell
-    if (opts.cwd !== undefined) spawnOpts.cwd = opts.cwd
-    if (opts.stdio !== undefined) spawnOpts.stdio = opts.stdio
+    if (shell !== undefined) spawnOpts.shell = shell
+    if (cwd !== undefined) spawnOpts.cwd = cwd
+    if (stdio !== undefined) spawnOpts.stdio = stdio
 
     return spawnOpts
   }
@@ -165,7 +165,7 @@ class Scrolex {
     }, [ 'stdout', 'stderr', 'combined' ])
 
     if (this._opts.dryrun === true) {
-      this._return({ spawnErr: null, code: 0, signal: null, pid: null, cb: cb })
+      this._return({ spawnErr: null, code: 0, signal: null, pid: null, cb })
     } else {
       const child = spawn(cmd, modArgs, spawnOpts)
       const pid   = child.pid
@@ -450,7 +450,7 @@ class Scrolex {
     }
 
     if (strAllErrors.length > 0) {
-      process.stderr.write(strAllErrors + '\n')
+      process.stderr.write(`${strAllErrors}\n`)
       if (this._opts.fatal === true) {
         process.exit(1)
       }
