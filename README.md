@@ -1,11 +1,5 @@
+[![Build Status](https://travis-ci.org/kvz/scrolex.svg?branch=master)](https://travis-ci.org/kvz/scrolex)
+
 # scrolex
-Execute commands, scroll back the stdout &amp; stderr, prefix by user-defined categories
 
-$ npm install --save-dev babel-polyfill
-require("babel-polyfill");
-
-npm install --save-dev babel-plugin-transform-async-to-generator
-
-{
-  "plugins": ["transform-async-to-generator" ]
-}
+Execute commands, scroll back the stdout &amp; stderr, prefixed by user-defined categories
