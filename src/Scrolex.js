@@ -18,17 +18,17 @@ class Scrolex {
     this._membuffers             = {}
     this._reject                 = null
     this._resolve                = null
-    this._frameCounter           = 0
     this._timer                  = null
     this._lastPrefix             = null
     this._lastLine               = null
-    this._lastLinePersistedIndex = null
-    this._lastLineIndex          = 0
+    this._frameCounter           = 0
 
     this.applyOpts(opts)
   }
 
   applyOpts (opts) {
+    this._lastLinePersistedIndex = null
+    this._lastLineIndex          = 0
     this._opts = this._normalizeOpts(this._defaults(this._opts, opts))
   }
 
@@ -48,12 +48,13 @@ class Scrolex {
       'shell'                : false,
       'dryrun'               : false,
       'fatal'                : false,
-      'cbPreLinefeed'        : (type, line, { flush = false, status = undefined }, callback) => { return callback(null, line) },
+      'cbPreLinefeed'        : (type, line, { flush = false, code = undefined }, callback) => { return callback(null, line) },
       'cleanupTmpFiles'      : true,
       'components'           : [],
       'cwd'                  : process.cwd(),
       'indent'               : 4,
       'mode'                 : 'singlescroll',
+      // 'mode'                 : 'passthru',
       'tmpFiles'             : {
         'stdout'  : `${osTmpdir()}/scrolex-%showCmd%-stdout-%uuid%.log`,
         'stderr'  : `${osTmpdir()}/scrolex-%showCmd%-stderr-%uuid%.log`,
@@ -139,8 +140,7 @@ class Scrolex {
   exe (origArgs, cb) {
     const { modArgs, cmd, fullCmd, showCmd } = this._normalizeArgs(origArgs)
     const spawnOpts = this._spawnOpts(this._opts)
-
-    this._lastShowCmd = showCmd
+    let hasReturned = false
 
     const promise = new Promise((resolve, reject) => {
       this._reject  = reject
@@ -165,7 +165,7 @@ class Scrolex {
     }, [ 'stdout', 'stderr', 'combined' ])
 
     if (this._opts.dryrun === true) {
-      this._return({ status: 0, signal: null, pid: null, cb: cb })
+      this._return({ spawnErr: null, code: 0, signal: null, pid: null, cb: cb })
     } else {
       const child = spawn(cmd, modArgs, spawnOpts)
       const pid   = child.pid
@@ -176,8 +176,23 @@ class Scrolex {
       })
 
       // Handle exit
-      child.on('close', (status, signal) => {
-        this._return({ status, signal, pid, cb, fullCmd })
+      child.on('error', (spawnErr) => {
+        if (!hasReturned) {
+          hasReturned = true
+          this._return({ spawnErr, pid, cb, fullCmd })
+        }
+      })
+      child.on('close', (code, signal) => {
+        if (!hasReturned) {
+          hasReturned = true
+          this._return({ code, signal, pid, cb, fullCmd })
+        }
+      })
+      child.on('exit', (code, signal) => {
+        if (!hasReturned) {
+          hasReturned = true
+          this._return({ code, signal, pid, cb, fullCmd })
+        }
       })
     }
 
@@ -224,7 +239,7 @@ class Scrolex {
     if (!this._membuffers[type]) { this._membuffers[type] = '' }
     this._membuffers[type] += data
   }
-  _membufOutputLines (type, { flush = false, status = undefined } = {}) {
+  _membufOutputLines (type, { flush = false, code = undefined } = {}) {
     let line = ''
     while ((line = this._membufShiftLine(type)) !== false) {
       this._outputLine(type, line)
@@ -232,7 +247,7 @@ class Scrolex {
 
     if (flush) {
       this._membufRead().split('\n').forEach((line) => {
-        this._outputLine(type, line, { flush, status })
+        this._outputLine(type, line, { flush, code })
       })
       this._membufWrite(type, '')
     }
@@ -240,10 +255,14 @@ class Scrolex {
 
   _filebufReadAndUnlink (type) {
     if (this._opts.tmpFiles[type]) {
-      const buf = fs.readFileSync(this._opts.tmpFiles[type], 'utf-8')
-      if (this._opts.cleanupTmpFiles === true) {
-        fs.unlinkSync(this._opts.tmpFiles[type])
+      let buf = ''
+      if (fs.existsSync(this._opts.tmpFiles[type])) {
+        buf = fs.readFileSync(this._opts.tmpFiles[type], 'utf-8')
+        if (this._opts.cleanupTmpFiles === true) {
+          fs.unlinkSync(this._opts.tmpFiles[type])
+        }
       }
+
       return buf
     }
   }
@@ -302,21 +321,21 @@ class Scrolex {
     return buf
   }
 
-  _outputLine (type, line, { flush = false, status = undefined } = {}) {
+  _outputLine (type, line, { flush = false, code = undefined } = {}) {
     if (this._opts.mode !== 'passthru' && this._opts.mode !== 'singlescroll') {
       return
     }
-    this._opts.cbPreLinefeed(type, line, { flush, status }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
+    this._opts.cbPreLinefeed(type, line, { flush, code }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
       if (modifiedLine) {
         this._lastLine = modifiedLine.trim()
         this._lastLineIndex++
       }
       // Force the animation of a frame or just write to stdout
-      this._drawFrame(undefined, { flush, status })
+      this._drawFrame(undefined, { flush, code })
     })
   }
 
-  _drawFrame (frame, { type = 'stdout', flush = false, status = undefined } = {}) {
+  _drawFrame (frame, { type = 'stdout', flush = false, code = undefined } = {}) {
     let prefix                        = this._prefix()
     let buff                          = ''
     let freshCategory                 = (prefix !== this._lastPrefix)
@@ -332,7 +351,7 @@ class Scrolex {
       frame = cliSpinner.frames[this._frameCounter++ % cliSpinner.frames.length]
     }
     if (flush && !waitingForNewLineAfterPersist) {
-      frame = (status === 0 || status === undefined || status === null ? logSymbols.success : logSymbols.error)
+      frame = (code === 0 || code === undefined || code === null ? logSymbols.success : logSymbols.error)
     }
 
     // if (flush) {
@@ -343,7 +362,7 @@ class Scrolex {
     //     frame        : frame,
     //     freshCategory: freshCategory,
     //     prefix       : prefix,
-    //     status       : status,
+    //     code       : code,
     //     type         : type,
     //   })
     //   return
@@ -383,7 +402,7 @@ class Scrolex {
     this._timer = null
   }
 
-  _return ({ status, signal, pid, cb, fullCmd }) {
+  _return ({ spawnErr, code, signal, pid, cb, fullCmd }) {
     const results = { stdout: '', stderr: '', combined: '' }
 
     this._withTypes(results, (val, type) => {
@@ -399,45 +418,50 @@ class Scrolex {
       results.combined = null
     }
 
-    let err    = null
-    let errMsg = ''
-    if (status !== 0) {
-      let msgs = [ ]
-
+    let retErr        = null
+    let strAllErrors  = ''
+    let errorMessages = []
+    if (code !== 0) {
       if (results.combined) {
-        msgs.push(`\n\n${indentString(results.combined, this._opts.indent)}\n\n`)
+        errorMessages.push(`\n\n${indentString(results.combined, this._opts.indent)}\n\n`)
       }
 
-      msgs.push(`Fault while executing "${fullCmd}"`)
-      msgs.push(`Exit code: ${status}`)
+      errorMessages.push(`Fault while executing "${fullCmd}"`)
+      if (spawnErr) {
+        errorMessages.push(`Spawn error: ${spawnErr}`)
+      }
+      if (code !== 0) {
+        errorMessages.push(`Exit code: ${code}`)
+      }
       if (signal) {
-        msgs.push(`Signal: ${signal}`)
+        errorMessages.push(`Signal: ${signal}`)
       }
-
-      errMsg = msgs.join('. ')
-      err    = new Error(errMsg)
+    }
+    if (errorMessages.length) {
+      strAllErrors = errorMessages.join('. ')
+      retErr       = new Error(strAllErrors)
     }
 
     const flush = true
-    this._membufOutputLines('stdout', { flush, status })
-    this._membufOutputLines('stderr', { flush, status })
+    this._membufOutputLines('stdout', { flush, code })
+    this._membufOutputLines('stderr', { flush, code })
     if (this._opts.mode === 'singlescroll') {
       this._stopAnimation()
     }
 
-    if (errMsg.length > 0) {
-      process.stderr.write(errMsg + '\n')
+    if (strAllErrors.length > 0) {
+      process.stderr.write(strAllErrors + '\n')
       if (this._opts.fatal === true) {
         process.exit(1)
       }
     }
 
     if (cb) {
-      return cb(err, results.stdout)
+      return cb(retErr, results.stdout)
     }
 
-    if (err) {
-      return this._reject(err)
+    if (retErr) {
+      return this._reject(retErr)
     }
 
     this._resolve(results.stdout)
