@@ -30,8 +30,7 @@ class Scrolex {
     this._opts = this._normalizeOpts(this._defaults(this._opts, opts))
   }
 
-  _withTypes (obj, func) {
-    const types = [ 'stdout', 'stderr' ]
+  _withTypes (obj, func, types = [ 'stdout', 'stderr' ]) {
     types.forEach((type) => {
       const ret = func(obj[type], type)
       if (ret !== undefined) {
@@ -45,16 +44,17 @@ class Scrolex {
       'addCommandAsComponent': false,
       'announce'             : false,
       'dryrun'               : false,
+      'fatal'                : false,
       'cbPreLinefeed'        : (type, line, { flush = false, status = undefined }, callback) => { return callback(null, line) },
       'cleanupTmpFiles'      : true,
       'components'           : [],
       'cwd'                  : process.cwd(),
       'indent'               : 4,
-      'passthru'             : true,
-      'singlescroll'         : true,
+      'mode'                 : 'singlescroll',
       'tmpFiles'             : {
-        'stdout': `${osTmpdir()}/scrolex-%showCmd%-stdout-%uuid%.log`,
-        'stderr': `${osTmpdir()}/scrolex-%showCmd%-stderr-%uuid%.log`,
+        'stdout'  : `${osTmpdir()}/scrolex-%showCmd%-stdout-%uuid%.log`,
+        'stderr'  : `${osTmpdir()}/scrolex-%showCmd%-stderr-%uuid%.log`,
+        'combined': `${osTmpdir()}/scrolex-%showCmd%-combined-%uuid%.log`,
       },
     })
 
@@ -71,7 +71,7 @@ class Scrolex {
     }
 
     if (opts.tmpFiles === false) {
-      this._withTypes(opts.tmpFiles, (val, type) => { return false })
+      this._withTypes(opts.tmpFiles, (val, type) => { return false }, [ 'stdout', 'stderr', 'combined' ])
     }
 
     return opts
@@ -132,7 +132,7 @@ class Scrolex {
       this._resolve = resolve
     })
 
-    if (this._opts.singlescroll === true) {
+    if (this._opts.mode === 'singlescroll') {
       this._startAnimation()
     }
     if (this._opts.announce === true) {
@@ -142,12 +142,12 @@ class Scrolex {
     // Put the PID into the file locations as a late normalization step
     this._withTypes(this._opts.tmpFiles, (val, type) => {
       return val.replace('%uuid%', uuidV4()).replace('%showCmd%', showCmd)
-    })
+    }, [ 'stdout', 'stderr', 'combined' ])
 
     // Reset/empty out files
     this._withTypes(this._opts.tmpFiles, (val, type) => {
       this._filebufWrite(type, '')
-    })
+    }, [ 'stdout', 'stderr', 'combined' ])
 
     if (this._opts.dryrun === true) {
       this._return({ status: 0, signal: null, pid: null, cb: cb })
@@ -162,7 +162,7 @@ class Scrolex {
 
       // Handle exit
       child.on('close', (status, signal) => {
-        this._return({ status, signal, pid, cb })
+        this._return({ status, signal, pid, cb, fullCmd })
       })
     }
 
@@ -246,6 +246,9 @@ class Scrolex {
     if (this._opts.tmpFiles[type]) {
       fs.appendFileSync(this._opts.tmpFiles[type], data, 'utf-8')
     }
+    if (this._opts.tmpFiles.combined) {
+      fs.appendFileSync(this._opts.tmpFiles.combined, data, 'utf-8')
+    }
   }
 
   _collectStream (type, data) {
@@ -271,7 +274,7 @@ class Scrolex {
       components.push(this._lastShowCmd)
     }
 
-    if (this._opts.singlescroll === false) {
+    if (this._opts.mode !== 'singlescroll') {
       buf += `\u276f `
     }
 
@@ -285,7 +288,7 @@ class Scrolex {
   }
 
   _outputLine (type, line, { flush = false, status = undefined } = {}) {
-    if (this._opts.passthru !== true) {
+    if (this._opts.mode !== 'passthru' && this._opts.mode !== 'singlescroll') {
       return
     }
     if (!line) {
@@ -321,7 +324,7 @@ class Scrolex {
     // console.log({frame, type, flush, prefix, status, openCategory, closeCategory})
     // return
 
-    if (this._opts.singlescroll === true) {
+    if (this._opts.mode === 'singlescroll') {
       let head = ` ${frame} ${prefix} `
       // buff += head + cliTruncate(this._lastLine.trim(), process.stdout.columns - head.length)
       buff += head + this._lastLine.trim()
@@ -356,47 +359,63 @@ class Scrolex {
   }
 
   _return ({ status, signal, pid, cb, fullCmd }) {
-    const results = { stdout: '', stderr: '' }
+    const results = { stdout: '', stderr: '', combined: '' }
+
     this._withTypes(results, (val, type) => {
-      return this._filebufReadAndUnlink(type)
-    })
+      // @todo: Handle the case where the file is too big to buffer in memory
+      // maybe the handling should be in `_filebufReadAndUnlink` so that we can
+      // return the last X bytes, with a reference to the tmp file, and not delete it.
+      const buf = this._filebufReadAndUnlink(type)
+      return (buf ? buf.trim() : '')
+    }, [ 'stdout', 'stderr', 'combined' ])
 
-    let err = null
-    if (status !== 0) {
-      let msgs = [ `Fault while executing "${fullCmd}"` ]
-
-      if (results.stderr) {
-        msgs.push(results.stderr)
-      }
-
-      if (msgs.length === 1) {
-        msgs.push(`Exit code: ${status}`)
-        if (results.stdout) {
-          msgs.push(`\n\n${results.stdout}\n\n`)
-        }
-      }
-
-      err = new Error(msgs.join('. '))
+    if (this._opts.mode !== 'singlescroll') {
+      // when mode is passthru, the combined output will already have been on-screen
+      results.combined = null
     }
 
-    let out = results.stdout.trim()
+    let err    = null
+    let errMsg = ''
+    if (status !== 0) {
+      let msgs = [ ]
+
+      if (results.combined) {
+        msgs.push(`\n\n${indentString(results.combined, this._opts.indent)}\n\n`)
+      }
+
+      msgs.push(`Fault while executing "${fullCmd}"`)
+      msgs.push(`Exit code: ${status}`)
+      if (signal) {
+        msgs.push(`Signal: ${signal}`)
+      }
+
+      errMsg = msgs.join('. ')
+      err    = new Error(errMsg)
+    }
 
     const flush = true
     this._membufOutputLines('stdout', { flush, status })
     this._membufOutputLines('stderr', { flush, status })
-    if (this._opts.singlescroll === true) {
+    if (this._opts.mode === 'singlescroll') {
       this._stopAnimation()
     }
 
+    if (errMsg.length > 0) {
+      process.stderr.write(errMsg + '\n')
+      if (this._opts.fatal === true) {
+        process.exit(1)
+      }
+    }
+
     if (cb) {
-      return cb(err, out)
+      return cb(err, results.stdout)
     }
 
     if (err) {
       return this._reject(err)
     }
 
-    this._resolve(out)
+    this._resolve(results.stdout)
   }
 }
 
