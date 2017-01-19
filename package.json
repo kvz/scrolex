@@ -1,6 +1,6 @@
 {
   "name": "scrolex",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Execute commands, scroll back the stdout &amp; stderr, prefix by user-defined categories",
   "main": "lib/index.js",
   "scripts": {
