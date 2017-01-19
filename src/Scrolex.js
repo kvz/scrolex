@@ -43,6 +43,7 @@ class Scrolex {
     const outOpts = _.defaultsDeep({}, prioOpts, opts, {
       'addCommandAsComponent': false,
       'announce'             : false,
+      'shell'                : false,
       'dryrun'               : false,
       'fatal'                : false,
       'cbPreLinefeed'        : (type, line, { flush = false, status = undefined }, callback) => { return callback(null, line) },
@@ -84,9 +85,15 @@ class Scrolex {
     let fullCmd = ''
 
     if (`${origArgs}` === origArgs) {
-      cmd     = 'sh'
-      showCmd = modArgs.split(/\s+/)[0]
-      modArgs = ['-c'].concat(modArgs)
+      if (this._opts.shell === true) {
+        showCmd = modArgs.split(/\s+/)[0]
+        cmd     = modArgs
+        modArgs = []
+      } else {
+        cmd     = 'sh'
+        showCmd = modArgs.split(/\s+/)[0]
+        modArgs = ['-c'].concat(modArgs)
+      }
     } else {
       cmd     = modArgs.pop()
       showCmd = cmd
@@ -111,6 +118,7 @@ class Scrolex {
         USER    : process.env.USER,
       }
     }
+    if (opts.shell !== undefined) spawnOpts.shell = opts.shell
     if (opts.cwd !== undefined) spawnOpts.cwd = opts.cwd
     if (opts.stdio !== undefined) spawnOpts.stdio = opts.stdio
 
