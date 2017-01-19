@@ -1,27 +1,28 @@
-const logUpdate    = require('log-update')
-const cliSpinner   = require('cli-spinners').dots10
-const logSymbols   = require('log-symbols')
-// const cliTruncate  = require('cli-truncate')
-const chalk        = require('chalk')
-const path         = require('path')
-const osTmpdir     = require('os-tmpdir')
-const fs           = require('fs')
-// const debug     = require('depurar')('scrolex')
-const spawn        = require('child_process').spawn
-const _            = require('lodash')
-const uuidV4       = require('uuid/v4')
-const indentString = require('indent-string')
+const logUpdate      = require('log-update')
+const cliSpinner     = require('cli-spinners').dots10
+const logSymbols     = require('log-symbols')
+// const cliTruncate = require('cli-truncate')
+const chalk          = require('chalk')
+const path           = require('path')
+const osTmpdir       = require('os-tmpdir')
+const fs             = require('fs')
+// const debug       = require('depurar')('scrolex')
+const spawn          = require('child_process').spawn
+const _              = require('lodash')
+const uuidV4         = require('uuid/v4')
+const indentString   = require('indent-string')
+const stripAnsi      = require('strip-ansi')
 
 class Scrolex {
   constructor (opts) {
-    this._lastShowCmd            = null
-    this._membuffers             = {}
-    this._reject                 = null
-    this._resolve                = null
-    this._timer                  = null
-    this._lastPrefix             = null
-    this._lastLine               = null
-    this._frameCounter           = 0
+    this._lastShowCmd  = null
+    this._membuffers   = {}
+    this._reject       = null
+    this._resolve      = null
+    this._timer        = null
+    this._lastPrefix   = null
+    this._lastLine     = null
+    this._frameCounter = 0
 
     this.applyOpts(opts)
   }
@@ -327,7 +328,7 @@ class Scrolex {
     }
     this._opts.cbPreLinefeed(type, line, { flush, code }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
       if (modifiedLine) {
-        this._lastLine = modifiedLine.trim()
+        this._lastLine = stripAnsi(modifiedLine.trim())
         this._lastLineIndex++
       }
       // Force the animation of a frame or just write to stdout

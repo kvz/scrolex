@@ -44,6 +44,7 @@
     "log-update": "1.0.2",
     "os-tmpdir": "1.0.2",
     "spawn-sync": "1.0.15",
+    "strip-ansi": "^3.0.1",
     "uuid": "^3.0.1"
   },
   "devDependencies": {
