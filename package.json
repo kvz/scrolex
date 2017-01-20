@@ -3,22 +3,29 @@
   "version": "0.0.8",
   "description": "Execute commands, scroll back the stdout &amp; stderr, prefix by user-defined categories",
   "main": "lib/index.js",
+  "jest": {
+    "verbose": true,
+    "testPathDirs": [
+      "src/"
+    ]
+  },
   "scripts": {
-    "ava": "env DEBUG=scrolex:* NODE_ENV=test ava --verbose lib/**/*.test.js",
-    "build": "babel src --source-maps --out-dir lib",
     "build:watch": "babel src --watch --source-maps --out-dir lib",
+    "build": "babel src --source-maps --out-dir lib",
     "fix": "eslint . --fix",
+    "jest:update": "env DEBUG=scrolex:* NODE_ENV=test jest --updateSnapshot",
+    "jest": "env DEBUG=scrolex:* NODE_ENV=test jest",
     "lint": "eslint .",
+    "npublish": "npm publish",
+    "playground": "env DEBUG=*:* babel-node src/playground.js",
     "push": "git push && git push --tags",
     "release:major": "env SEMANTIC=major npm run release",
     "release:minor": "env SEMANTIC=minor npm run release",
     "release:patch": "env SEMANTIC=patch npm run release",
     "release": "npm version ${SEMANTIC:-patch} -m \"Release %s\" && npm-run-all build push npublish",
-    "npublish": "npm publish",
-    "playground": "env DEBUG=*:* babel-node src/playground.js",
-    "test:acceptance": "npm run build && env DEBUG=*:* node lib/acceptance.js",
+    "test:update": "npm-run-all build jest:update",
     "test:watcher": "npm test -- --watch",
-    "test": "npm-run-all build ava",
+    "test": "npm-run-all build jest",
     "upgrade:modules": "next-update --keep true --tldr"
   },
   "repository": {
@@ -48,7 +55,6 @@
     "uuid": "^3.0.1"
   },
   "devDependencies": {
-    "ava": "0.17.0",
     "babel-cli": "6.18.0",
     "babel-core": "6.21.0",
     "babel-eslint": "7.1.1",
@@ -69,6 +75,7 @@
     "eslint-plugin-promise": "3.4.0",
     "eslint-plugin-standard": "2.0.1",
     "fakefile": "0.0.8",
+    "jest": "18.1.0",
     "next-update": "1.5.1",
     "npm-run-all": "4.0.0"
   },

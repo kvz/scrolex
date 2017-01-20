@@ -1,0 +1,29 @@
+exports[`Scrolex _defaults should default according to the snapshot 1`] = `
+Object {
+  "addCommandAsComponent": false,
+  "announce": false,
+  "cbPreLinefeed": [Function],
+  "cleanupTmpFiles": true,
+  "components": "a>b>c",
+  "cwd": "/tmp",
+  "dryrun": false,
+  "fatal": false,
+  "indent": 4,
+  "interval": 80,
+  "mode": "singlescroll",
+  "shell": false,
+  "tmpFiles": false,
+}
+`;
+
+exports[`Scrolex _normalizeOpts should normalize according to the snapshot 1`] = `
+Object {
+  "components": Array [
+    "a",
+    "b",
+    "c",
+  ],
+  "indent": 0,
+  "mode": "singlescroll",
+}
+`;

@@ -1,10 +1,22 @@
-require('babel-polyfill')
-const ScrolexMock = require('./ScrolexMock')
-const sut         = new ScrolexMock()
-const test        = require('ava')
-// const debug    = require('depurar')('sut')
-
-test.cb('callback', (t) => {
-  const o = sut._defaults({a: 1})
-  t.is(o, {a: 1})
+const Scrolex = require('./ScrolexMock')
+const scrolex = new Scrolex()
+describe('Scrolex', () => {
+  describe('_normalizeOpts', () => {
+    it('should normalize according to the snapshot', () => {
+      expect(scrolex._normalizeOpts({
+        mode      : 'singlescroll',
+        components: 'a>b>c',
+      })).toMatchSnapshot()
+    })
+  })
+  describe('_defaults', () => {
+    it('should default according to the snapshot', () => {
+      expect(scrolex._defaults({
+        cwd       : '/tmp',
+        tmpFiles  : false,
+        mode      : 'singlescroll',
+        components: 'a>b>c',
+      })).toMatchSnapshot()
+    })
+  })
 })

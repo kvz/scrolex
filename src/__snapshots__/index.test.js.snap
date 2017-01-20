@@ -1,0 +1,20 @@
+exports[`index exe should accept async/await 1`] = `
+"
+
+    Starting with limit=1, interval=400, errorOut=true
+    Doing thing 1. fakecmd with limit=1, interval=400, errorOut=true done.
+
+. Fault while executing \"MOCK_ERROR_OUT=1 MOCK_LIMIT=1 node /Users/kvz/code/scrolex/src/fakecmd.js\". Exit code: 1"
+`;
+
+exports[`index exe should accept async/await 2`] = `
+"Starting with limit=2, interval=400, errorOut=false
+Doing thing 1
+Doing thing 2. fakecmd with limit=2, interval=400, errorOut=false done."
+`;
+
+exports[`index exe should accept async/await 3`] = `
+"Starting with limit=2, interval=400, errorOut=false
+Doing thing 1
+Doing thing 2. fakecmd with limit=2, interval=400, errorOut=false done."
+`;
