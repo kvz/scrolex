@@ -10,7 +10,7 @@ const fs             = require('fs')
 const spawn          = require('child_process').spawn
 const _              = require('lodash')
 const uuidV4         = require('uuid/v4')
-const indentString   = require('indent-string')
+const indentString   = require('./indentString')
 const stripAnsi      = require('strip-ansi')
 
 class Scrolex {
