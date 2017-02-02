@@ -45,7 +45,6 @@
     "cli-spinners": "1.0.0",
     "cli-truncate": "0.2.1",
     "depurar": "0.3.0",
-    "indent-string": "^3.0.0",
     "lodash": "4.17.4",
     "log-symbols": "1.0.2",
     "log-update": "1.0.2",
