@@ -19,5 +19,5 @@ module.exports.out = (str, opts, cb) => {
   } else {
     globalScrolex.applyOpts(opts)
   }
-  return globalScrolex.out(str, cb)
+  return globalScrolex.out(str, opts.flush, cb)
 }

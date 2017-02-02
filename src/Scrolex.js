@@ -135,12 +135,13 @@ class Scrolex {
     return spawnOpts
   }
 
-  out (str) {
-    this._outputLine('stdout', str, { flush: true })
+  out (str, flush = false) {
+    this._outputLine('stdout', str, { flush: flush })
   }
 
   exe (origArgs, cb) {
     const { modArgs, cmd, fullCmd, showCmd } = this._normalizeArgs(origArgs)
+    this._lastShowCmd = showCmd
     const spawnOpts = this._spawnOpts(this._opts)
     let hasReturned = false
 
@@ -304,9 +305,9 @@ class Scrolex {
   _prefix () {
     let buf = ''
 
-    const components = this._opts.components
+    const components = _.clone(this._opts.components)
 
-    if (this._opts.addCommandAsComponent) {
+    if (this._opts.addCommandAsComponent && this._lastShowCmd) {
       components.push(this._lastShowCmd)
     }
 
@@ -377,7 +378,7 @@ class Scrolex {
         buff += this._lastLine
       }
       this.scrollerWrite(buff)
-      if (flush && !waitingForNewLineAfterPersist) {
+      if (freshCategory || (flush && !waitingForNewLineAfterPersist)) {
         this.scrollerPersist()
         this._lastLine = ''
         this._lastLinePersistedIndex = this._lastLineIndex

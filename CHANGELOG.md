@@ -11,7 +11,7 @@ Unreleased and unplanned todos
 Released: TBA.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.11...master).
 
-- [x] Fix bug when passing array to scrolex
+- [x] Optionally flush `out`, instead of always
 
 ## v0.0.11
 
