@@ -19,6 +19,12 @@ Doing thing 1
 Doing thing 2. fakecmd with limit=2, interval=400, errorOut=false done."
 `;
 
+exports[`index exe should accept async/await 4`] = `
+"Starting with limit=2, interval=400, errorOut=false
+Doing thing 1
+Doing thing 2. fakecmd with limit=2, interval=400, errorOut=false done."
+`;
+
 exports[`index exe should accept async/await and catch an error 1`] = `
 [Error: 
 

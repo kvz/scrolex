@@ -104,13 +104,14 @@ class Scrolex {
         modArgs = ['-c'].concat(modArgs)
       }
     } else {
-      cmd     = modArgs.pop()
+      cmd     = modArgs.shift()
       showCmd = cmd
     }
 
     showCmd = path.basename(showCmd)
     fullCmd = (_.isArray(origArgs) ? origArgs.join(' ') : origArgs)
 
+    // console.log({ modArgs, cmd, fullCmd, showCmd })
     return { modArgs, cmd, fullCmd, showCmd }
   }
 

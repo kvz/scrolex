@@ -11,6 +11,20 @@ describe('index', () => {
         expect(removeVariance(out)).toMatchSnapshot()
       })
     })
+    it('should accept an array', () => {
+      Scrolex.exe([process.argv[0], `${__dirname}/fakecmd.js`], {
+        env: {
+          MOCK_ERROR_OUT: 0,
+          MOCK_LIMIT    : 2,
+        },
+        cleanupTmpFiles: false,
+        mode           : 'passthru',
+        components     : 'lanyon>postinstall',
+      }, (err, out) => {
+        expect(err).toBeNull()
+        expect(removeVariance(out)).toMatchSnapshot()
+      })
+    })
     it('should accept promise and catch an error', () => {
       Scrolex.exe(`MOCK_ERROR_OUT=1 MOCK_LIMIT=1 node ${__dirname}/fakecmd.js`, { cleanupTmpFiles: false, mode: 'singlescroll', components: 'lanyon>postinstall' })
         .then(() => {

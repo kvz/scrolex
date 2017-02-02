@@ -11,6 +11,7 @@ describe('Scrolex', () => {
       }))).toMatchSnapshot()
     })
   })
+
   describe('_defaults', () => {
     it('should default according to the snapshot', () => {
       expect(removeVariance(scrolex._defaults({
