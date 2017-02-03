@@ -79,7 +79,7 @@ class Scrolex {
       this._withTypes(opts.tmpFiles, (val, type) => { return false }, [ 'stdout', 'stderr', 'combined' ])
     }
 
-    let allowed = [ 'singlescroll', 'passthru' ]
+    let allowed = [ 'singlescroll', 'passthru', 'silent' ]
     if (allowed.indexOf(opts.mode) === -1) {
       throw new Error(`Unrecognized options.mode: "${opts.mode}". Pick one of: "${allowed.join('", "')}". `)
     }
@@ -311,7 +311,7 @@ class Scrolex {
       components.push(this._lastShowCmd)
     }
 
-    if (this._opts.mode !== 'singlescroll') {
+    if (this._opts.mode === 'passthru') {
       buf += `\u276f `
     }
 
@@ -325,7 +325,7 @@ class Scrolex {
   }
 
   _outputLine (type, line, { flush = false, code = undefined } = {}) {
-    if (this._opts.mode !== 'passthru' && this._opts.mode !== 'singlescroll') {
+    if (this._opts.mode === 'silent') {
       return
     }
     this._opts.cbPreLinefeed(type, line, { flush, code }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
@@ -418,6 +418,7 @@ class Scrolex {
 
     if (this._opts.mode !== 'singlescroll') {
       // when mode is passthru, the combined output will already have been on-screen
+      // when mode is silent, we want no automated dumps on screen
       results.combined = null
     }
 

@@ -1,5 +1,5 @@
 const limit    = process.argv[2] || process.env.MOCK_LIMIT || 10
-const interval = process.argv[3] || process.env.MOCK_INTERVAL || 400
+const interval = process.argv[3] || process.env.MOCK_INTERVAL || 1000
 const errorOut = process.env.MOCK_ERROR_OUT === '1'
 let count      = 0
 

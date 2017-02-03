@@ -6,10 +6,17 @@ Unreleased and unplanned todos
 
 - [ ] Fix bug where output adds a final progress indicator
 
-## v0.0.12
+## v0.0.13
 
 Released: TBA.
-[Diff](https://github.com/kvz/scrolex/compare/v0.0.11...master).
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.12...master).
+
+- [ ] Introduce `silent` mode
+
+## v0.0.12
+
+Released: 2017-02-02.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.11...v0.0.12).
 
 - [x] Optionally flush `out`, instead of always
 
