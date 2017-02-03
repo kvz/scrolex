@@ -6,7 +6,7 @@ const chalk          = require('chalk')
 const path           = require('path')
 const osTmpdir       = require('os-tmpdir')
 const fs             = require('fs')
-// const debug       = require('depurar')('scrolex')
+// const debug          = require('depurar')('scrolex')
 const spawn          = require('child_process').spawn
 const _              = require('lodash')
 const uuidV4         = require('uuid/v4')
@@ -145,6 +145,8 @@ class Scrolex {
     const spawnOpts = this._spawnOpts(this._opts)
     let hasReturned = false
 
+    // console.log({opts: this._opts, modArgs, cmd, fullCmd})
+
     const promise = new Promise((resolve, reject) => {
       this._reject  = reject
       this._resolve = resolve
@@ -175,7 +177,9 @@ class Scrolex {
 
       // Pipe data to collect functions
       this._withTypes(child, (stream, type) => {
-        stream.on('data', this._collectStream.bind(this, type))
+        if (stream) {
+          stream.on('data', this._collectStream.bind(this, type))
+        }
       })
 
       // Handle exit
@@ -454,7 +458,9 @@ class Scrolex {
     }
 
     if (strAllErrors.length > 0) {
-      process.stderr.write(`${strAllErrors}\n`)
+      if (this._opts.mode !== 'silent') {
+        process.stderr.write(`${strAllErrors}\n`)
+      }
       if (this._opts.fatal === true) {
         process.exit(1)
       }

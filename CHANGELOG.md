@@ -11,7 +11,7 @@ Unreleased and unplanned todos
 Released: TBA.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.12...master).
 
-- [ ] Introduce `silent` mode
+- [x] Introduce `silent` mode
 
 ## v0.0.12
 
