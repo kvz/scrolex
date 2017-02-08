@@ -26,7 +26,7 @@ class Scrolex {
       this._state = this._opts.state
     } else {
       global.scrolex = global.scrolex || {}
-      this._state    = this._opts.state
+      this._state    = global.scrolex
     }
 
     this._reject  = null
@@ -34,15 +34,21 @@ class Scrolex {
 
     // Modify original state object via direct defaults
     this._state = _.defaults(this._state, {
-      lastShowCmd           : null,
-      membuffers            : {},
-      timer                 : null,
-      lastPrefix            : null,
-      lastLine              : null,
-      frameCounter          : 0,
-      lastLinePersistedIndex: null,
-      lastLineIndex         : 0,
+      components       : [],
+      frameCounter     : 0,
+      lastLine         : null,
+      lastLineIdx      : 0,
+      lastStickyLineIdx: null,
+      lastPrefix       : null,
+      lastShowCmd      : null,
+      membuffers       : {},
+      timer            : null,
     })
+
+    // Allow to set new components, even though global state has some already
+    if ('components' in this._opts) {
+      this._state.components = this._opts.components
+    }
   }
 
   _withTypes (obj, func, types = [ 'stdout', 'stderr' ]) {
@@ -63,7 +69,6 @@ class Scrolex {
       'fatal'                : false,
       'cbPreLinefeed'        : (type, line, { flush = false, code = undefined }, callback) => { return callback(null, line) },
       'cleanupTmpFiles'      : true,
-      'components'           : [],
       'cwd'                  : process.cwd(),
       'indent'               : 4,
       'mode'                 : process.env.SCROLEX_MODE || 'singlescroll',
@@ -147,13 +152,19 @@ class Scrolex {
     return spawnOpts
   }
 
-  out (str, flush = false) {
-    this._outputLine('stdout', str, { flush: flush })
+  scroll (str) {
+    this._outputLine('stdout', str, { flush: false })
+  }
+
+  stick (str) {
+    this._outputLine('stdout', str, { flush: true })
   }
 
   exe (origArgs, cb) {
     const { modArgs, cmd, fullCmd, showCmd } = this._normalizeArgs(origArgs)
     this._state.lastShowCmd = showCmd
+    this._state.lastFullCmd = fullCmd
+
     const spawnOpts = this._spawnOpts(this._opts)
     let hasReturned = false
 
@@ -222,10 +233,10 @@ class Scrolex {
   scrollerWrite (line) {
     logUpdate(line)
   }
-  scrollerClear (line) {
+  scrollerClear () {
     logUpdate.clear()
   }
-  scrollerPersist (line) {
+  scrollerStick () {
     logUpdate.done()
   }
 
@@ -321,7 +332,7 @@ class Scrolex {
   _prefix () {
     let buf = ''
 
-    const components = _.clone(this._opts.components)
+    const components = _.clone(this._state.components)
 
     if (this._opts.addCommandAsComponent && this._state.lastShowCmd) {
       components.push(this._state.lastShowCmd)
@@ -347,18 +358,25 @@ class Scrolex {
     this._opts.cbPreLinefeed(type, line, { flush, code }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
       if (modifiedLine) {
         this._state.lastLine = stripAnsi(modifiedLine.trim())
-        this._state.lastLineIndex++
+        this._state.lastLineIdx++
       }
       // Force the animation of a frame or just write to stdout
       this._drawFrame(undefined, { flush, code })
     })
   }
 
-  _drawFrame (frame, { type = 'stdout', flush = false, code = undefined } = {}) {
-    let prefix                        = this._prefix()
-    let buff                          = ''
-    let freshCategory                 = (prefix !== this._state.lastPrefix)
-    let waitingForNewLineAfterPersist = (this._state.lastLinePersistedIndex >= this._state.lastLineIndex)
+  _drawFrame (frame, opts = {}) {
+    const { type = 'stdout', flush = false, code = undefined } = opts
+    let prefix        = this._prefix()
+    let buff          = ''
+    let prefixChanged = (prefix !== this._state.lastPrefix && this._state.lastPrefix !== null)
+    let haveNewLine   = (this._state.lastLineIdx > this._state.lastStickyLineIdx)
+    let announced     = ''
+    let makePrevStick = prefixChanged
+    let makeThisStick = flush && haveNewLine
+
+    // console.log({prefixChanged, haveNewLine, prefix, lp: this._state.lastPrefix})
+    // console.log({makePrevStick, makeThisStick, announced, haveNewLine, prefixChanged, flush, 'void': false})
 
     this._state.lastPrefix = prefix
 
@@ -369,36 +387,44 @@ class Scrolex {
     if (!frame) {
       frame = cliSpinner.frames[this._state.frameCounter++ % cliSpinner.frames.length]
     }
-    if (flush && !waitingForNewLineAfterPersist) {
-      frame = (code === 0 || code === undefined || code === null ? logSymbols.success : logSymbols.error)
+    if (flush) {
+      if (code === 0 || code === undefined || code === null) {
+        frame = logSymbols.success
+        if (this._opts.announce === true) {
+          if (code === 0) {
+            announced = `Successfully executed: ${this._state.lastFullCmd}`
+          }
+        }
+      } else {
+        frame = logSymbols.error
+        if (this._opts.announce === true) {
+          announced = `Failed to execute: ${this._state.lastFullCmd}`
+        }
+      }
     }
-
-    // if (flush) {
-    //   console.log({
-    //     _state.lastLine    : this._state.lastLine,
-    //     _state.lastPrefix  : this._state.lastPrefix,
-    //     flush        : flush,
-    //     frame        : frame,
-    //     freshCategory: freshCategory,
-    //     prefix       : prefix,
-    //     code       : code,
-    //     type         : type,
-    //   })
-    //   return
-    // }
 
     if (this._opts.mode === 'singlescroll') {
       buff += ` ${frame} `
-      if (!waitingForNewLineAfterPersist) {
+      if (haveNewLine) {
         buff += `${prefix} `
-        buff += this._state.lastLine
+        if (announced === '') {
+          buff += this._state.lastLine
+        } else {
+          buff += announced
+        }
+      }
+      if (makePrevStick) {
+        this.scrollerClear()
+        this.scrollerWrite(` ${logSymbols.success} ${this._state.lastLineFrame.substr(3)}`)
+        this.scrollerStick()
       }
       this.scrollerWrite(buff)
-      if (freshCategory || (flush && !waitingForNewLineAfterPersist)) {
-        this.scrollerPersist()
-        this._state.lastLine = ''
-        this._state.lastLinePersistedIndex = this._state.lastLineIndex
+      if (makeThisStick) {
+        this.scrollerStick()
+        this._state.lastLine          = ''
+        this._state.lastStickyLineIdx = this._state.lastLineIdx
       }
+      this._state.lastLineFrame = buff
     } else {
       let tail = ''
       if (flush) {
@@ -406,7 +432,7 @@ class Scrolex {
       }
       // Just write to stdout (or stderr)
       buff += indentString(this._state.lastLine, this._opts.indent)
-      if (freshCategory) {
+      if (prefixChanged) {
         process[type].write(`${prefix}\n\n`)
       }
       process[type].write(`${buff}${tail}\n`)
@@ -500,6 +526,10 @@ module.exports.exe = (args, opts = {}, cb) => {
   return new Scrolex(opts).exe(args, cb)
 }
 
-module.exports.out = (str, opts = {}, cb) => {
-  return new Scrolex(opts).out(str, opts.flush, cb)
+module.exports.scroll = (str, opts = {}) => {
+  return new Scrolex(opts).scroll(str)
+}
+
+module.exports.stick = (str, opts = {}) => {
+  return new Scrolex(opts).stick(str)
 }
