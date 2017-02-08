@@ -138,13 +138,7 @@ class Scrolex {
     if (env !== undefined) {
       spawnOpts.env = env
     } else {
-      spawnOpts.env = {
-        DEBUG   : process.env.DEBUG,
-        HOME    : process.env.HOME,
-        NODE_ENV: process.env.NODE_ENV,
-        PATH    : process.env.PATH,
-        USER    : process.env.USER,
-      }
+      spawnOpts.env = process.env
     }
     if (shell !== undefined) spawnOpts.shell = shell
     if (cwd !== undefined) spawnOpts.cwd = cwd
@@ -370,7 +364,8 @@ class Scrolex {
     const { type = 'stdout', flush = false, code = undefined } = opts
     let prefix        = this._prefix()
     let buff          = ''
-    let prefixChanged = (prefix !== this._state.lastPrefix && this._state.lastPrefix !== null)
+    let prefixNew     = (prefix !== this._state.lastPrefix)
+    let prefixChanged = (prefixNew && this._state.lastPrefix !== null)
     let haveNewLine   = (this._state.lastLineIdx > this._state.lastStickyLineIdx)
     let announced     = ''
     let makePrevStick = prefixChanged
@@ -427,18 +422,18 @@ class Scrolex {
       }
       this._state.lastLineFrame = buff
     } else {
-      let tail = ''
-      if (flush) {
-        tail = ` ${frame}`
-      }
-      // Just write to stdout (or stderr)
-      buff += indentString(this._state.lastLine, this._opts.indent)
-      if (prefixChanged) {
-        process[type].write(`${prefix}\n\n`)
-      }
-      process[type].write(`${buff}${tail}\n`)
-      if (flush) {
-        process[type].write('\n')
+      if (haveNewLine) {
+        // Just write to stdout (or stderr)
+        buff += indentString(`${this._state.lastLine}`, this._opts.indent)
+        this._state.lastLine = ''
+        this._state.lastStickyLineIdx = this._state.lastLineIdx
+
+        if (prefixChanged) {
+          process[type].write(`\n${prefix}\n\n`)
+        } else if (prefixNew) {
+          process[type].write(`${prefix}\n\n`)
+        }
+        process[type].write(`${buff}\n`)
       }
     }
   }

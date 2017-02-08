@@ -34,7 +34,7 @@ exports[`ScrolexExports exe should accept async/await 1`] = `
     Starting with limit=1, interval=1000, errorOut=true
     Doing thing 1. fakecmd with limit=1, interval=1000, errorOut=true done.
 
-. Fault while executing \"MOCK_ERROR_OUT=1 MOCK_LIMIT=1 node #{SCROLEX_ROOT}/src/fakecmd.js\". Exit code: 1"
+. Fault while executing \"FAKECMD_CRASH=1 FAKECMD_RUNS=1 node #{SCROLEX_ROOT}/src/fakecmd.js\". Exit code: 1"
 `;
 
 exports[`ScrolexExports exe should accept async/await 2`] = `
@@ -61,5 +61,5 @@ exports[`ScrolexExports exe should accept async/await and catch an error 1`] = `
     Starting with limit=1, interval=1000, errorOut=true
     Doing thing 1. fakecmd with limit=1, interval=1000, errorOut=true done.
 
-. Fault while executing "MOCK_ERROR_OUT=1 MOCK_LIMIT=1 node #{SCROLEX_ROOT}/src/fakecmd.js". Exit code: 1]
+. Fault while executing "FAKECMD_CRASH=1 FAKECMD_RUNS=1 node #{SCROLEX_ROOT}/src/fakecmd.js". Exit code: 1]
 `;

@@ -1,7 +1,9 @@
-const limit    = process.argv[2] || process.env.MOCK_LIMIT || 10
-const interval = process.argv[3] || process.env.MOCK_INTERVAL || 1000
-const errorOut = process.env.MOCK_ERROR_OUT === '1'
+const limit    = process.argv[2] || process.env.FAKECMD_RUNS || 10
+const interval = process.argv[3] || process.env.FAKECMD_INTERVAL || 1000
+const errorOut = process.env.FAKECMD_CRASH === '1'
 let count      = 0
+
+console.log({limit, p: process.argv, e: process.env})
 
 console.log(`Starting with limit=${limit}, interval=${interval}, errorOut=${errorOut}`)
 setInterval(() => {
