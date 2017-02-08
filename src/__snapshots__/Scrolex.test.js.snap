@@ -49,13 +49,13 @@ Doing thing 1
 Doing thing 2. fakecmd with limit=2, interval=1000, errorOut=false done."
 `;
 
-exports[`ScrolexExports exe should accept async/await and catch an error 1`] = `
+exports[`ScrolexExports exe should accept async/await 4`] = `
 "Starting with limit=2, interval=1000, errorOut=false
 Doing thing 1
 Doing thing 2. fakecmd with limit=2, interval=1000, errorOut=false done."
 `;
 
-exports[`ScrolexExports exe should accept async/await and catch an error 2`] = `
+exports[`ScrolexExports exe should accept async/await and catch an error 1`] = `
 [Error: 
 
     Starting with limit=1, interval=1000, errorOut=true

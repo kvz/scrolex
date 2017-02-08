@@ -41,6 +41,7 @@ class Scrolex {
       lastStickyLineIdx: null,
       lastPrefix       : null,
       lastShowCmd      : null,
+      lastLineFrame    : '',
       membuffers       : {},
       timer            : null,
     })
