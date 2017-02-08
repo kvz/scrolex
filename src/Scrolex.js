@@ -15,22 +15,34 @@ const stripAnsi      = require('strip-ansi')
 
 class Scrolex {
   constructor (opts) {
-    this._lastShowCmd  = null
-    this._membuffers   = {}
-    this._reject       = null
-    this._resolve      = null
-    this._timer        = null
-    this._lastPrefix   = null
-    this._lastLine     = null
-    this._frameCounter = 0
-
-    this.applyOpts(opts)
+    this._applyOpts(opts)
   }
 
-  applyOpts (opts) {
-    this._lastLinePersistedIndex = null
-    this._lastLineIndex          = 0
+  _applyOpts (opts) {
+    // Clone original opts object via defaults {}
     this._opts = this._normalizeOpts(this._defaults(this._opts, opts))
+
+    if ('state' in this._opts) {
+      this._state = this._opts.state
+    } else {
+      global.scrolex = global.scrolex || {}
+      this._state    = this._opts.state
+    }
+
+    this._reject  = null
+    this._resolve = null
+
+    // Modify original state object via direct defaults
+    this._state = _.defaults(this._state, {
+      lastShowCmd           : null,
+      membuffers            : {},
+      timer                 : null,
+      lastPrefix            : null,
+      lastLine              : null,
+      frameCounter          : 0,
+      lastLinePersistedIndex: null,
+      lastLineIndex         : 0,
+    })
   }
 
   _withTypes (obj, func, types = [ 'stdout', 'stderr' ]) {
@@ -141,7 +153,7 @@ class Scrolex {
 
   exe (origArgs, cb) {
     const { modArgs, cmd, fullCmd, showCmd } = this._normalizeArgs(origArgs)
-    this._lastShowCmd = showCmd
+    this._state.lastShowCmd = showCmd
     const spawnOpts = this._spawnOpts(this._opts)
     let hasReturned = false
 
@@ -218,33 +230,33 @@ class Scrolex {
   }
 
   _membufShiftLine (type) {
-    if (!this._membuffers) { this._membuffers = {} }
-    if (!this._membuffers[type]) { this._membuffers[type] = '' }
+    if (!this._state.membuffers) { this._state.membuffers = {} }
+    if (!this._state.membuffers[type]) { this._state.membuffers[type] = '' }
 
-    let pos = this._membuffers[type].indexOf('\n')
+    let pos = this._state.membuffers[type].indexOf('\n')
 
     if (pos === -1) {
       return false
     }
 
-    let line = this._membuffers[type].substr(0, pos + 1)
-    this._membuffers[type] = this._membuffers[type].substr(pos + 1, this._membuffers[type].length - 1)
+    let line = this._state.membuffers[type].substr(0, pos + 1)
+    this._state.membuffers[type] = this._state.membuffers[type].substr(pos + 1, this._state.membuffers[type].length - 1)
     return line
   }
   _membufRead (type) {
-    if (!this._membuffers) { this._membuffers = {} }
-    if (!this._membuffers[type]) { this._membuffers[type] = '' }
-    return this._membuffers[type]
+    if (!this._state.membuffers) { this._state.membuffers = {} }
+    if (!this._state.membuffers[type]) { this._state.membuffers[type] = '' }
+    return this._state.membuffers[type]
   }
   _membufWrite (type, data) {
-    if (!this._membuffers) { this._membuffers = {} }
-    if (!this._membuffers[type]) { this._membuffers[type] = '' }
-    this._membuffers[type] = ''
+    if (!this._state.membuffers) { this._state.membuffers = {} }
+    if (!this._state.membuffers[type]) { this._state.membuffers[type] = '' }
+    this._state.membuffers[type] = ''
   }
   _membufAppend (type, data) {
-    if (!this._membuffers) { this._membuffers = {} }
-    if (!this._membuffers[type]) { this._membuffers[type] = '' }
-    this._membuffers[type] += data
+    if (!this._state.membuffers) { this._state.membuffers = {} }
+    if (!this._state.membuffers[type]) { this._state.membuffers[type] = '' }
+    this._state.membuffers[type] += data
   }
   _membufOutputLines (type, { flush = false, code = undefined } = {}) {
     let line = ''
@@ -300,8 +312,8 @@ class Scrolex {
 
   _startAnimation () {
     let that = this
-    this._timer = setInterval(() => {
-      let frame = cliSpinner.frames[this._frameCounter++ % cliSpinner.frames.length]
+    this._state.timer = setInterval(() => {
+      let frame = cliSpinner.frames[this._state.frameCounter++ % cliSpinner.frames.length]
       this._drawFrame.bind(that)(frame)
     }, this._opts.interval)
   }
@@ -311,8 +323,8 @@ class Scrolex {
 
     const components = _.clone(this._opts.components)
 
-    if (this._opts.addCommandAsComponent && this._lastShowCmd) {
-      components.push(this._lastShowCmd)
+    if (this._opts.addCommandAsComponent && this._state.lastShowCmd) {
+      components.push(this._state.lastShowCmd)
     }
 
     if (this._opts.mode === 'passthru') {
@@ -334,8 +346,8 @@ class Scrolex {
     }
     this._opts.cbPreLinefeed(type, line, { flush, code }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
       if (modifiedLine) {
-        this._lastLine = stripAnsi(modifiedLine.trim())
-        this._lastLineIndex++
+        this._state.lastLine = stripAnsi(modifiedLine.trim())
+        this._state.lastLineIndex++
       }
       // Force the animation of a frame or just write to stdout
       this._drawFrame(undefined, { flush, code })
@@ -345,17 +357,17 @@ class Scrolex {
   _drawFrame (frame, { type = 'stdout', flush = false, code = undefined } = {}) {
     let prefix                        = this._prefix()
     let buff                          = ''
-    let freshCategory                 = (prefix !== this._lastPrefix)
-    let waitingForNewLineAfterPersist = (this._lastLinePersistedIndex >= this._lastLineIndex)
+    let freshCategory                 = (prefix !== this._state.lastPrefix)
+    let waitingForNewLineAfterPersist = (this._state.lastLinePersistedIndex >= this._state.lastLineIndex)
 
-    this._lastPrefix = prefix
+    this._state.lastPrefix = prefix
 
-    if (this._lastLine === null) {
+    if (this._state.lastLine === null) {
       return
     }
 
     if (!frame) {
-      frame = cliSpinner.frames[this._frameCounter++ % cliSpinner.frames.length]
+      frame = cliSpinner.frames[this._state.frameCounter++ % cliSpinner.frames.length]
     }
     if (flush && !waitingForNewLineAfterPersist) {
       frame = (code === 0 || code === undefined || code === null ? logSymbols.success : logSymbols.error)
@@ -363,8 +375,8 @@ class Scrolex {
 
     // if (flush) {
     //   console.log({
-    //     _lastLine    : this._lastLine,
-    //     _lastPrefix  : this._lastPrefix,
+    //     _state.lastLine    : this._state.lastLine,
+    //     _state.lastPrefix  : this._state.lastPrefix,
     //     flush        : flush,
     //     frame        : frame,
     //     freshCategory: freshCategory,
@@ -379,13 +391,13 @@ class Scrolex {
       buff += ` ${frame} `
       if (!waitingForNewLineAfterPersist) {
         buff += `${prefix} `
-        buff += this._lastLine
+        buff += this._state.lastLine
       }
       this.scrollerWrite(buff)
       if (freshCategory || (flush && !waitingForNewLineAfterPersist)) {
         this.scrollerPersist()
-        this._lastLine = ''
-        this._lastLinePersistedIndex = this._lastLineIndex
+        this._state.lastLine = ''
+        this._state.lastLinePersistedIndex = this._state.lastLineIndex
       }
     } else {
       let tail = ''
@@ -393,7 +405,7 @@ class Scrolex {
         tail = ` ${frame}`
       }
       // Just write to stdout (or stderr)
-      buff += indentString(this._lastLine, this._opts.indent)
+      buff += indentString(this._state.lastLine, this._opts.indent)
       if (freshCategory) {
         process[type].write(`${prefix}\n\n`)
       }
@@ -405,8 +417,8 @@ class Scrolex {
   }
 
   _stopAnimation () {
-    clearInterval(this._timer)
-    this._timer = null
+    clearInterval(this._state.timer)
+    this._state.timer = null
   }
 
   _return ({ spawnErr, code, signal, pid, cb, fullCmd }) {
@@ -478,4 +490,16 @@ class Scrolex {
   }
 }
 
-module.exports = Scrolex
+module.exports.Scrolex = Scrolex
+
+// module.exports.stdout = (opts = {}) => {
+//   return new Chainer('stdout', opts)
+// }
+
+module.exports.exe = (args, opts = {}, cb) => {
+  return new Scrolex(opts).exe(args, cb)
+}
+
+module.exports.out = (str, opts = {}, cb) => {
+  return new Scrolex(opts).out(str, opts.flush, cb)
+}

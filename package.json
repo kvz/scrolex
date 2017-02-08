@@ -2,7 +2,7 @@
   "name": "scrolex",
   "version": "0.0.14",
   "description": "Execute commands, scroll back the stdout &amp; stderr, prefix by user-defined categories",
-  "main": "lib/index.js",
+  "main": "lib/Scrolex.js",
   "jest": {
     "verbose": true,
     "testPathDirs": [
