@@ -39,7 +39,7 @@ describe('ScrolexExports', () => {
       scrolex.exe([process.argv[0], `${__dirname}/fakecmd.js`], {
         env: {
           FAKECMD_CRASH: 0,
-          FAKECMD_RUNS    : 2,
+          FAKECMD_RUNS : 2,
         },
         cleanupTmpFiles: false,
         mode           : 'passthru',
