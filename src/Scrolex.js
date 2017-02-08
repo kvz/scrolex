@@ -44,11 +44,16 @@ class Scrolex {
       lastLineFrame    : '',
       membuffers       : {},
       timer            : null,
+      mode             : process.env.SCROLEX_MODE || 'singlescroll',
     })
 
     // Allow to set new components, even though global state has some already
     if ('components' in this._opts) {
       this._state.components = this._opts.components
+    }
+    // Allow to set new mode, even though global state has one already
+    if ('mode' in this._opts) {
+      this._state.mode = this._opts.mode
     }
   }
 
@@ -72,7 +77,6 @@ class Scrolex {
       'cleanupTmpFiles'      : true,
       'cwd'                  : process.cwd(),
       'indent'               : 4,
-      'mode'                 : process.env.SCROLEX_MODE || 'singlescroll',
       'interval'             : process.env.SCROLEX_INTERVAL || cliSpinner.interval,
       'tmpFiles'             : {
         'stdout'  : `${osTmpdir()}/scrolex-%showCmd%-stdout-%uuid%.log`,
@@ -97,7 +101,7 @@ class Scrolex {
       this._withTypes(opts.tmpFiles, (val, type) => { return false }, [ 'stdout', 'stderr', 'combined' ])
     }
 
-    let allowed = [ 'singlescroll', 'passthru', 'silent' ]
+    let allowed = [ 'singlescroll', 'passthru', 'silent', undefined ]
     if (allowed.indexOf(opts.mode) === -1) {
       throw new Error(`Unrecognized options.mode: "${opts.mode}". Pick one of: "${allowed.join('", "')}". `)
     }
@@ -170,7 +174,7 @@ class Scrolex {
       this._resolve = resolve
     })
 
-    if (this._opts.mode === 'singlescroll') {
+    if (this._state.mode === 'singlescroll') {
       this._startAnimation()
     }
     if (this._opts.announce === true) {
@@ -333,7 +337,7 @@ class Scrolex {
       components.push(this._state.lastShowCmd)
     }
 
-    if (this._opts.mode === 'passthru') {
+    if (this._state.mode === 'passthru') {
       buf += `\u276f `
     }
 
@@ -347,7 +351,7 @@ class Scrolex {
   }
 
   _outputLine (type, line, { flush = false, code = undefined } = {}) {
-    if (this._opts.mode === 'silent') {
+    if (this._state.mode === 'silent') {
       return
     }
     this._opts.cbPreLinefeed(type, line, { flush, code }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
@@ -399,7 +403,7 @@ class Scrolex {
       }
     }
 
-    if (this._opts.mode === 'singlescroll') {
+    if (this._state.mode === 'singlescroll') {
       buff += ` ${frame} `
       if (haveNewLine) {
         buff += `${prefix} `
@@ -454,7 +458,7 @@ class Scrolex {
       return (buf ? buf.trim() : '')
     }, [ 'stdout', 'stderr', 'combined' ])
 
-    if (this._opts.mode !== 'singlescroll') {
+    if (this._state.mode !== 'singlescroll') {
       // when mode is passthru, the combined output will already have been on-screen
       // when mode is silent, we want no automated dumps on screen
       results.combined = null
@@ -487,12 +491,12 @@ class Scrolex {
     const flush = true
     this._membufOutputLines('stdout', { flush, code })
     this._membufOutputLines('stderr', { flush, code })
-    if (this._opts.mode === 'singlescroll') {
+    if (this._state.mode === 'singlescroll') {
       this._stopAnimation()
     }
 
     if (strAllErrors.length > 0) {
-      if (this._opts.mode !== 'silent') {
+      if (this._state.mode !== 'silent') {
         process.stderr.write(`${strAllErrors}\n`)
       }
       if (this._opts.fatal === true) {

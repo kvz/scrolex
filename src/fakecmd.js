@@ -1,19 +1,17 @@
-const limit    = process.argv[2] || process.env.FAKECMD_RUNS || 10
+const runs     = process.argv[2] || process.env.FAKECMD_RUNS || 5
 const interval = process.argv[3] || process.env.FAKECMD_INTERVAL || 1000
-const errorOut = process.env.FAKECMD_CRASH === '1'
+const crash    = process.env.FAKECMD_CRASH === '1'
 let count      = 0
 
-console.log({limit, p: process.argv, e: process.env})
-
-console.log(`Starting with limit=${limit}, interval=${interval}, errorOut=${errorOut}`)
+console.log(`Starting with runs=${runs}, interval=${interval}, crash=${crash}`)
 setInterval(() => {
   count++
-  if (count < limit) {
+  if (count < runs) {
     console.log(`Doing thing ${count}`)
     return
   }
-  console.log(`Doing thing ${count}. fakecmd with limit=${limit}, interval=${interval}, errorOut=${errorOut} done. `)
-  if (errorOut) {
+  console.log(`Doing thing ${count}. fakecmd with runs=${runs}, interval=${interval}, crash=${crash} done. `)
+  if (crash) {
     process.exit(1)
   } else {
     process.exit(0)
