@@ -16,6 +16,7 @@
     "jest:update": "env DEBUG=scrolex:* NODE_ENV=test jest --updateSnapshot",
     "jest": "env DEBUG=scrolex:* NODE_ENV=test jest",
     "lint": "eslint .",
+    "demo": "./scripts/demo1.sh",
     "npublish": "npm publish",
     "playground": "env DEBUG=*:* babel-node src/playground.js",
     "push": "git push && git push --tags",
