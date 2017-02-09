@@ -409,7 +409,9 @@ class Scrolex {
     if (this._opts.mode === 'singlescroll') {
       buff += ` ${frame} `
       if (haveNewLine) {
-        buff += `${prefix} `
+        if (prefix) {
+          buff += `${prefix} `
+        }
         if (announced === '') {
           buff += this._global.lastLine
         } else {
