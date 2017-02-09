@@ -33,16 +33,17 @@ class Scrolex {
     _.defaults(this._state, {
       lastFrameCnt : 0,
       lastLineFrame: '',
+      lastPrefix   : null,
       lastTimer    : null,
     })
 
     this._local = _.defaults({}, this._local, {
+      lastBuffs        : {},
+      lastFullCmd      : null,
       lastLine         : null,
       lastLineIdx      : 0,
-      lastStickyLineIdx: null,
-      lastPrefix       : null,
       lastShowCmd      : null,
-      lastBuffs        : {},
+      lastStickyLineIdx: null,
     })
 
     // Allow to set new opts, even though global state has them already
@@ -164,10 +165,14 @@ class Scrolex {
     this._outputLine('stdout', str, { flush: true })
   }
 
+  failure (str) {
+    this._outputLine('stderr', str, { flush: true, code: 1 })
+  }
+
   exe (origArgs, cb) {
     const { modArgs, cmd, fullCmd, showCmd } = this._normalizeArgs(origArgs)
     this._local.lastShowCmd = showCmd
-    this._state.lastFullCmd = fullCmd
+    this._local.lastFullCmd = fullCmd
 
     const spawnOpts = this._spawnOpts(this._state)
     let hasReturned = false
@@ -379,14 +384,14 @@ class Scrolex {
     const { type = 'stdout', flush = false, code = undefined } = opts
     let prefix        = this._prefix()
     let buff          = ''
-    let prefixNew     = (prefix !== this._local.lastPrefix)
-    let prefixChanged = (prefixNew && this._local.lastPrefix !== null)
+    let prefixNew     = (prefix !== this._state.lastPrefix)
+    let prefixChanged = (prefixNew && this._state.lastPrefix !== null)
     let haveNewLine   = (this._local.lastLineIdx > this._local.lastStickyLineIdx)
     let announced     = ''
     let makePrevStick = prefixChanged
     let makeThisStick = flush && haveNewLine
 
-    this._local.lastPrefix = prefix
+    this._state.lastPrefix = prefix
 
     if (this._local.lastLine === null) {
       return
@@ -399,14 +404,14 @@ class Scrolex {
       if (code === 0 || code === undefined || code === null) {
         frame = logSymbols.success
         if (this._state.announce === true) {
-          if (code === 0) {
-            announced = `Successfully executed: ${this._state.lastFullCmd}`
+          if (code === 0 && this._local.lastFullCmd) {
+            announced = `Successfully executed: ${this._local.lastFullCmd}`
           }
         }
       } else {
         frame = logSymbols.error
-        if (this._state.announce === true) {
-          announced = `Failed to execute: ${this._state.lastFullCmd}`
+        if (this._state.announce === true && this._local.lastFullCmd) {
+          announced = `Failed to execute: ${this._local.lastFullCmd}`
         }
       }
     }
@@ -423,7 +428,7 @@ class Scrolex {
       }
       if (makePrevStick) {
         this.scrollerClear()
-        this.scrollerWrite(` ${logSymbols.success} ${this._local.lastLineFrame.substr(3)}`)
+        this.scrollerWrite(` ${logSymbols.success} ${this._state.lastLineFrame.substr(3)}`)
         this.scrollerStick()
       }
       this.scrollerWrite(buff)
@@ -432,7 +437,7 @@ class Scrolex {
         this._local.lastLine          = ''
         this._local.lastStickyLineIdx = this._local.lastLineIdx
       }
-      this._local.lastLineFrame = buff
+      this._state.lastLineFrame = buff
     } else {
       if (haveNewLine) {
         // Just write to stdout (or stderr)
@@ -545,4 +550,8 @@ module.exports.scroll = (str, opts = {}) => {
 
 module.exports.stick = (str, opts = {}) => {
   return new Scrolex(opts).stick(str)
+}
+
+module.exports.failure = (str, opts = {}) => {
+  return new Scrolex(opts).failure(str)
 }

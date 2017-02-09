@@ -25,6 +25,9 @@ scrolex.exe('ls -al', { mode: mode, components: 'myapp>prepare', 'announce': tru
     scrolex.stick('I stick around: p')
     scrolex.stick('I stick around: q')
 
+    scrolex.failure('oh noes')
+    process.exit(0)
+
     // ;(async () => {
     //   try {
     //     const cores = await scrolex.exe('getconf _NPROCESSORS_ONLN')
