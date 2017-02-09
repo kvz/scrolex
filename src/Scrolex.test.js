@@ -37,9 +37,9 @@ describe('ScrolexExports', () => {
     })
     it('should accept an array', () => {
       scrolex.exe([process.argv[0], `${__dirname}/fakecmd.js`], {
-        mode       : 'passthru',
-        components : 'lanyon>postinstall',
-        env        : Object.assign({}, process.env, {
+        mode      : 'passthru',
+        components: 'lanyon>postinstall',
+        env       : Object.assign({}, process.env, {
           FAKECMD_CRASH: 0,
           FAKECMD_RUNS : 2,
         }),
