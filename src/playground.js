@@ -2,7 +2,11 @@ const mode     = process.argv[2] || 'singlescroll'
 const runs     = process.argv[3] || process.env.FAKECMD_RUNS || 5
 const interval = process.argv[4] || process.env.FAKECMD_INTERVAL || 1000
 
-const scrolex = require('./Scrolex').persistOpts({
+const scrolex = require('./Scrolex')
+
+scrolex.stick('Welcome')
+
+scrolex.persistOpts({
   mode      : mode,
   components: 'myapp>prepare',
   announce  : true,

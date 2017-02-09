@@ -60,6 +60,10 @@ class Scrolex {
     _.defaults(this._global, defaultState)
     _.defaults(this._opts, this._global, defaultOpts)
 
+    this._resetLocalState()
+  }
+
+  _resetLocalState (opts) {
     this._local = {
       lastBuffs  : {},
       lastFullCmd: null,
@@ -159,6 +163,7 @@ class Scrolex {
   }
 
   exe (origArgs, cb) {
+    this._resetLocalState()
     const { modArgs, cmd, fullCmd, showCmd } = this._normalizeArgs(origArgs)
     this._local.lastShowCmd = showCmd
     this._local.lastFullCmd = fullCmd
@@ -372,20 +377,20 @@ class Scrolex {
 
   _drawFrame (frame, opts = {}) {
     const { type = 'stdout', flush = false, code = undefined } = opts
-    let prefix        = this._prefix()
-    let buff          = ''
-    let prefixNew     = (prefix !== this._global.lastPrefix)
-    let prefixChanged = (prefixNew && this._global.lastPrefix !== null)
-    let haveNewLine   = (this._global.lastLineIdx > this._global.lastStickyLineIdx)
-    let announced     = ''
-    let makePrevStick = prefixChanged
-    let makeThisStick = flush && haveNewLine
-
-    this._global.lastPrefix = prefix
+    let prefix            = this._prefix()
+    let buff              = ''
+    let prefixNew         = (prefix !== this._global.lastPrefix)
+    let prefixChanged     = (prefixNew && this._global.lastPrefix !== null)
+    let haveNewLine       = (this._global.lastLineIdx > this._global.lastStickyLineIdx)
+    let stuckPreviousLine = (this._global.lastLineIdx - 1 === this._global.lastStickyLineIdx)
+    let announced         = ''
+    let makePrevStick     = prefixChanged && !stuckPreviousLine
+    let makeThisStick     = flush && haveNewLine
 
     if (this._global.lastLine === null) {
       return
     }
+    this._global.lastPrefix = prefix
 
     if (!frame) {
       frame = cliSpinner.frames[this._global.lastFrameCnt++ % cliSpinner.frames.length]
@@ -426,8 +431,11 @@ class Scrolex {
           this.scrollerClear()
           this.scrollerWrite(` ${logSymbols.success} ${lastLineFrame}`)
           this.scrollerStick()
+          this._global.lastLine          = ''
+          this._global.lastStickyLineIdx = this._global.lastLineIdx
         }
       }
+      // this.scrollerClear()
       this.scrollerWrite(buff)
       if (makeThisStick) {
         this.scrollerStick()
