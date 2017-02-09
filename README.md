@@ -193,6 +193,10 @@ See [CHANGELOG.md](CHANGELOG.md)
 
 - [Kevin van Zonneveld](https://transloadit.com/about/#kevin)
 
+## Related Projects
+
+- [listr](https://github.com/SamVerschueren/listr): Nicer I'd say, but it does impose its structure on your code
+
 ## License
 
 Copyright (c) 2017 Kevin van Zonneveld. Licenses under [MIT](LICENSE).

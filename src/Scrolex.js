@@ -6,12 +6,14 @@ const chalk          = require('chalk')
 const path           = require('path')
 const osTmpdir       = require('os-tmpdir')
 const fs             = require('fs')
-// const debug          = require('depurar')('scrolex')
+// const debug       = require('depurar')('scrolex')
 const spawn          = require('child_process').spawn
 const _              = require('lodash')
 const uuidV4         = require('uuid/v4')
 const indentString   = require('./indentString')
 const stripAnsi      = require('strip-ansi')
+const cliTruncate    = require('cli-truncate')
+const figures        = require('figures')
 
 class Scrolex {
   constructor (opts = {}) {
@@ -35,6 +37,7 @@ class Scrolex {
       dryrun               : false,
       fatal                : false,
       cbPreLinefeed        : (type, line, { flush = false, code = undefined }, callback) => { return callback(null, line) },
+      truncate             : true,
       cleanupTmpFiles      : true,
       cwd                  : process.cwd(),
       indent               : 3,
@@ -347,11 +350,11 @@ class Scrolex {
     }
 
     if (this._opts.mode === 'passthru') {
-      buf += ` \u276f `
+      buf += ` ${figures.pointerSmall} `
     }
 
     components.forEach((component) => {
-      buf += `${chalk.dim(component)} \u276f `
+      buf += `${chalk.dim(component)} ${figures.pointerSmall} `
     })
 
     buf = buf.replace(/\s+$/, '')
@@ -372,6 +375,20 @@ class Scrolex {
       // Force the animation of a frame or just write to stdout
       this._drawFrame(undefined, { flush, code })
     })
+  }
+
+  _countSymbols (str) {
+    // We need to count v, and \u001b[32m, as single chars
+    let replacers = [...cliSpinner.frames, logSymbols.success, logSymbols.error, figures.tick, figures.pointerSmall]
+    replacers.forEach((replacer) => {
+      while (str.indexOf(replacer) !== -1) {
+        str = str.replace(replacer, 'x')
+      }
+    })
+    // Strip colors, etc
+    str = stripAnsi(str)
+    let length = str.length
+    return length
   }
 
   _drawFrame (frame, opts = {}) {
@@ -416,10 +433,17 @@ class Scrolex {
         if (prefix) {
           buff += `${prefix} `
         }
+
+        let text
         if (announced === '') {
-          buff += this._global.lastLine
+          text = this._global.lastLine
         } else {
-          buff += announced
+          text = announced
+        }
+
+        if (this._opts.truncate === true) {
+          let len = this._countSymbols(buff)
+          buff = cliTruncate(`${buff}${text}`, process.stdout.columns - len)
         }
       }
       if (makePrevStick) {

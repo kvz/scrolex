@@ -14,6 +14,11 @@ describe('Scrolex', () => {
       }))).toMatchSnapshot()
     })
   })
+  describe('_countSymbols', () => {
+    it('should count symbpols', () => {
+      expect(s._countSymbols(` ⢄ \u001b[2mmyapp\u001b[22m`)).toBe(8)
+    })
+  })
 })
 
 describe('ScrolexExports', () => {

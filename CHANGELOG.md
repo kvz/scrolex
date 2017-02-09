@@ -4,13 +4,14 @@
 
 Unreleased and unplanned todos
 
-- [ ] Fix bug where output adds a final progress indicator
+- [ ] 
 
 ## v0.0.17
 
 Released: TBA.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.16...master).
 
+- [x] Truncate by default when scrolling
 - [x] Fix bug that could lead to duplicate sticky lines
 - [x] Fix double spacing when there's no prefix
 - [x] Do not inherit options between calls. Only listen to `persistOpts`
