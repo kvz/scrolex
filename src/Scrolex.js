@@ -14,26 +14,11 @@ const indentString   = require('./indentString')
 const stripAnsi      = require('strip-ansi')
 
 class Scrolex {
-  constructor (opts) {
-    this._everlastingOpts = [
-      'components',
-      'mode',
-      'addCommandAsComponent',
-      'announce',
-      'shell',
-      'dryrun',
-      'fatal',
-      'cbPreLinefeed',
-      'cleanupTmpFiles',
-      'cwd',
-      'indent',
-      'interval',
-      'tmpFiles',
-    ]
+  constructor (opts = {}) {
     this._applyOpts(opts)
   }
 
-  _applyOpts (opts) {
+  _applyOpts (opts = {}) {
     // Clone original opts object via defaults {}
     this._opts = this._normalizeOpts(this._defaults(this._opts, opts))
 
@@ -45,24 +30,32 @@ class Scrolex {
     }
 
     // Modify original state object via direct defaults
-    this._state = _.defaults(this._state, {
-      lastFrameCnt     : 0,
+    _.defaults(this._state, {
+      lastFrameCnt : 0,
+      lastLineFrame: '',
+      lastTimer    : null,
+    })
+
+    this._local = _.defaults({}, this._local, {
       lastLine         : null,
       lastLineIdx      : 0,
       lastStickyLineIdx: null,
       lastPrefix       : null,
       lastShowCmd      : null,
-      lastLineFrame    : '',
       lastBuffs        : {},
-      lastTimer        : null,
     })
 
     // Allow to set new opts, even though global state has them already
     for (let key in this._opts) {
-      // opts here means set by user, vs a default. We don't want to override state with default
-      if (key in opts || !(key in this._state)) {
-        // but then we do take them from the property as that is normalized
-        this._state[key] = this._opts[key]
+      if (key === 'tmpFiles') {
+        // persist locally only
+        this._local[key] = this._opts[key]
+      } else {
+        // opts here means set by user, vs a default. We don't want to override state with default
+        if (key in opts || !(key in this._state)) {
+          // but then we do take them from the property as that is normalized
+          this._state[key] = this._opts[key]
+        }
       }
     }
   }
@@ -173,7 +166,7 @@ class Scrolex {
 
   exe (origArgs, cb) {
     const { modArgs, cmd, fullCmd, showCmd } = this._normalizeArgs(origArgs)
-    this._state.lastShowCmd = showCmd
+    this._local.lastShowCmd = showCmd
     this._state.lastFullCmd = fullCmd
 
     const spawnOpts = this._spawnOpts(this._state)
@@ -194,12 +187,12 @@ class Scrolex {
     }
 
     // Put the PID into the file locations as a late normalization step
-    this._withTypes(this._state.tmpFiles, (val, type) => {
+    this._withTypes(this._local.tmpFiles, (val, type) => {
       return val.replace('%uuid%', uuidV4()).replace('%showCmd%', showCmd)
     }, [ 'stdout', 'stderr', 'combined' ])
 
     // Reset/empty out files
-    this._withTypes(this._state.tmpFiles, (val, type) => {
+    this._withTypes(this._local.tmpFiles, (val, type) => {
       this._filebufWrite(type, '')
     }, [ 'stdout', 'stderr', 'combined' ])
 
@@ -254,33 +247,33 @@ class Scrolex {
   }
 
   _membufShiftLine (type) {
-    if (!this._state.lastBuffs) { this._state.lastBuffs = {} }
-    if (!this._state.lastBuffs[type]) { this._state.lastBuffs[type] = '' }
+    if (!this._local.lastBuffs) { this._local.lastBuffs = {} }
+    if (!this._local.lastBuffs[type]) { this._local.lastBuffs[type] = '' }
 
-    let pos = this._state.lastBuffs[type].indexOf('\n')
+    let pos = this._local.lastBuffs[type].indexOf('\n')
 
     if (pos === -1) {
       return false
     }
 
-    let line = this._state.lastBuffs[type].substr(0, pos + 1)
-    this._state.lastBuffs[type] = this._state.lastBuffs[type].substr(pos + 1, this._state.lastBuffs[type].length - 1)
+    let line = this._local.lastBuffs[type].substr(0, pos + 1)
+    this._local.lastBuffs[type] = this._local.lastBuffs[type].substr(pos + 1, this._local.lastBuffs[type].length - 1)
     return line
   }
   _membufRead (type) {
-    if (!this._state.lastBuffs) { this._state.lastBuffs = {} }
-    if (!this._state.lastBuffs[type]) { this._state.lastBuffs[type] = '' }
-    return this._state.lastBuffs[type]
+    if (!this._local.lastBuffs) { this._local.lastBuffs = {} }
+    if (!this._local.lastBuffs[type]) { this._local.lastBuffs[type] = '' }
+    return this._local.lastBuffs[type]
   }
   _membufWrite (type, data) {
-    if (!this._state.lastBuffs) { this._state.lastBuffs = {} }
-    if (!this._state.lastBuffs[type]) { this._state.lastBuffs[type] = '' }
-    this._state.lastBuffs[type] = ''
+    if (!this._local.lastBuffs) { this._local.lastBuffs = {} }
+    if (!this._local.lastBuffs[type]) { this._local.lastBuffs[type] = '' }
+    this._local.lastBuffs[type] = ''
   }
   _membufAppend (type, data) {
-    if (!this._state.lastBuffs) { this._state.lastBuffs = {} }
-    if (!this._state.lastBuffs[type]) { this._state.lastBuffs[type] = '' }
-    this._state.lastBuffs[type] += data
+    if (!this._local.lastBuffs) { this._local.lastBuffs = {} }
+    if (!this._local.lastBuffs[type]) { this._local.lastBuffs[type] = '' }
+    this._local.lastBuffs[type] += data
   }
   _membufOutputLines (type, { flush = false, code = undefined } = {}) {
     let line = ''
@@ -297,12 +290,12 @@ class Scrolex {
   }
 
   _filebufReadAndUnlink (type) {
-    if (this._state.tmpFiles[type]) {
+    if (this._local.tmpFiles[type]) {
       let buf = ''
-      if (fs.existsSync(this._state.tmpFiles[type])) {
-        buf = fs.readFileSync(this._state.tmpFiles[type], 'utf-8')
+      if (fs.existsSync(this._local.tmpFiles[type])) {
+        buf = fs.readFileSync(this._local.tmpFiles[type], 'utf-8')
         if (this._state.cleanupTmpFiles === true) {
-          fs.unlinkSync(this._state.tmpFiles[type])
+          fs.unlinkSync(this._local.tmpFiles[type])
         }
       }
 
@@ -310,21 +303,21 @@ class Scrolex {
     }
   }
   _filebufRead (type) {
-    if (this._state.tmpFiles[type]) {
-      return fs.readFileSync(this._state.tmpFiles[type], 'utf-8')
+    if (this._local.tmpFiles[type]) {
+      return fs.readFileSync(this._local.tmpFiles[type], 'utf-8')
     }
   }
   _filebufWrite (type, data) {
-    if (this._state.tmpFiles[type]) {
-      fs.writeFileSync(this._state.tmpFiles[type], data, 'utf-8')
+    if (this._local.tmpFiles[type]) {
+      fs.writeFileSync(this._local.tmpFiles[type], data, 'utf-8')
     }
   }
   _filebufAppend (type, data) {
-    if (this._state.tmpFiles[type]) {
-      fs.appendFileSync(this._state.tmpFiles[type], data, 'utf-8')
+    if (this._local.tmpFiles[type]) {
+      fs.appendFileSync(this._local.tmpFiles[type], data, 'utf-8')
     }
-    if (this._state.tmpFiles.combined) {
-      fs.appendFileSync(this._state.tmpFiles.combined, data, 'utf-8')
+    if (this._local.tmpFiles.combined) {
+      fs.appendFileSync(this._local.tmpFiles.combined, data, 'utf-8')
     }
   }
 
@@ -351,8 +344,8 @@ class Scrolex {
 
     const components = _.clone(this._state.components)
 
-    if (this._state.addCommandAsComponent && this._state.lastShowCmd) {
-      components.push(this._state.lastShowCmd)
+    if (this._state.addCommandAsComponent && this._local.lastShowCmd) {
+      components.push(this._local.lastShowCmd)
     }
 
     if (this._state.mode === 'passthru') {
@@ -374,8 +367,8 @@ class Scrolex {
     }
     this._state.cbPreLinefeed(type, line, { flush, code }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
       if (modifiedLine) {
-        this._state.lastLine = stripAnsi(modifiedLine.trim())
-        this._state.lastLineIdx++
+        this._local.lastLine = stripAnsi(modifiedLine.trim())
+        this._local.lastLineIdx++
       }
       // Force the animation of a frame or just write to stdout
       this._drawFrame(undefined, { flush, code })
@@ -386,16 +379,16 @@ class Scrolex {
     const { type = 'stdout', flush = false, code = undefined } = opts
     let prefix        = this._prefix()
     let buff          = ''
-    let prefixNew     = (prefix !== this._state.lastPrefix)
-    let prefixChanged = (prefixNew && this._state.lastPrefix !== null)
-    let haveNewLine   = (this._state.lastLineIdx > this._state.lastStickyLineIdx)
+    let prefixNew     = (prefix !== this._local.lastPrefix)
+    let prefixChanged = (prefixNew && this._local.lastPrefix !== null)
+    let haveNewLine   = (this._local.lastLineIdx > this._local.lastStickyLineIdx)
     let announced     = ''
     let makePrevStick = prefixChanged
     let makeThisStick = flush && haveNewLine
 
-    this._state.lastPrefix = prefix
+    this._local.lastPrefix = prefix
 
-    if (this._state.lastLine === null) {
+    if (this._local.lastLine === null) {
       return
     }
 
@@ -423,29 +416,29 @@ class Scrolex {
       if (haveNewLine) {
         buff += `${prefix} `
         if (announced === '') {
-          buff += this._state.lastLine
+          buff += this._local.lastLine
         } else {
           buff += announced
         }
       }
       if (makePrevStick) {
         this.scrollerClear()
-        this.scrollerWrite(` ${logSymbols.success} ${this._state.lastLineFrame.substr(3)}`)
+        this.scrollerWrite(` ${logSymbols.success} ${this._local.lastLineFrame.substr(3)}`)
         this.scrollerStick()
       }
       this.scrollerWrite(buff)
       if (makeThisStick) {
         this.scrollerStick()
-        this._state.lastLine          = ''
-        this._state.lastStickyLineIdx = this._state.lastLineIdx
+        this._local.lastLine          = ''
+        this._local.lastStickyLineIdx = this._local.lastLineIdx
       }
-      this._state.lastLineFrame = buff
+      this._local.lastLineFrame = buff
     } else {
       if (haveNewLine) {
         // Just write to stdout (or stderr)
-        buff += indentString(`${this._state.lastLine}`, this._state.indent)
-        this._state.lastLine = ''
-        this._state.lastStickyLineIdx = this._state.lastLineIdx
+        buff += indentString(`${this._local.lastLine}`, this._state.indent)
+        this._local.lastLine = ''
+        this._local.lastStickyLineIdx = this._local.lastLineIdx
 
         if (prefixChanged) {
           process[type].write(`\n${prefix}\n\n`)

@@ -16,6 +16,7 @@ Released: TBA.
 Released: 2017-02-09.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.16...v0.0.15).
 
+- [x] Make it safe (although not necessarily pretty) to run multiple executes at once
 - [x] Add `setOpts` command
 - [x] Fix bug where spinner would keep running if 2 commands are executed
 
