@@ -11,6 +11,8 @@ Unreleased and unplanned todos
 Released: TBA.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.16...master).
 
+- [x] Document `env`
+
 ## v0.0.16
 
 Released: 2017-02-09.
