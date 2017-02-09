@@ -14,17 +14,6 @@ describe('Scrolex', () => {
       }))).toMatchSnapshot()
     })
   })
-
-  describe('_defaults', () => {
-    it('should default according to the snapshot', () => {
-      expect(removeVariance(s._defaults({
-        cwd       : '/tmp',
-        tmpFiles  : false,
-        mode      : 'singlescroll',
-        components: 'a>b>c',
-      }))).toMatchSnapshot()
-    })
-  })
 })
 
 describe('ScrolexExports', () => {

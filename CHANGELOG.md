@@ -11,6 +11,7 @@ Unreleased and unplanned todos
 Released: TBA.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.16...master).
 
+- [x] Do not inherit options between calls. Only listen to `persistOpts`
 - [x] Add method: `failure`
 - [x] Document `env`
 

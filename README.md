@@ -95,14 +95,18 @@ scrolex.stick('i will stick around, no matter what')
 Use `async/await` for shell-scripting super-powers ⚡
 
 ```js
-async () => {
+const serialExecution = async () => {
   try {
     const cores = await scrolex.exe('getconf _NPROCESSORS_ONLN')
-    await scrolex.exe(`echo "You have ${cores} cpu cores"`)
+    if (cores > 10) {
+      await scrolex.stick(`You have ${cores} cpu cores. Amazing!`)
+    }
+    const processTree = await scrolex.exe('ps auxf', { silent: true })
   } catch (err) {
     throw new Error(err)
   }  
-}()
+}
+serialExecution()
 ```
 
 Use `Promises` for ... yeah why would you. But the important thing is you _can_!:
@@ -138,9 +142,9 @@ Default: `process.env`.
 
 ## Global State (?!?!!!?‼️❓)
 
-Yes, by default Scrolex uses global state (`global.scrolex`) within a Node process to keep track of output, 
-in addition options can/will be re-used across calls, such as `components` and `mode`. This makes
-that consequent calls can be lightweight, as well as the output looking consistent.
+Yes, by default Scrolex uses global state (`global.scrolex`) within a Node process to keep track of output
+and so that options can be re-used across instances if you set them with `persistOpts`. This makes it so
+that consequent calls can be lightweight, as well as the output consistent looking.
 
 If you'd rather ditch convenience in favor of strictness, or this causes a hard time testing, 
 you are welcome to pass in your own state object, and Scrolex will happily use that instead:
@@ -154,15 +158,14 @@ You can even pass a new state object each time to avoid any kind of magic inheri
 
 
 ```js
-const myLocalStateObject = {}
-scrolex.exe('ls -al', { })
+scrolex.exe('ls -al', { state: {} })
 ```
 
-Options from previous calls will be inherited, but if you'd rather set options separately you
-can do so via:
+Here's how to make all subsequent `scrolex.exe()` calls add their currently executing command
+to the prefix:
 
 ```js
-scrolex.setOpts({
+scrolex.persistOpts({
   addCommandAsComponent: true
 })
 ```
