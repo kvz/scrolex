@@ -170,6 +170,17 @@ scrolex.persistOpts({
 })
 ```
 
+You can also persist upon requiring:
+
+```js
+const scrolex = require('./Scrolex').persistOpts({
+  mode: 'silent',
+})
+scrolex.exe('ls -al', (err, out) => {
+  
+})
+```
+
 ## Todo
 
 See [CHANGELOG.md](CHANGELOG.md)
