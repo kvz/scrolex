@@ -124,6 +124,18 @@ scrolex.exe('ls -al')
 If set to `true`, whenever `exe` yields a non-zero exit code, the whole process stops with a dump of the combined
 stderr & stdout on-screen. Useful for shell-scripting tasks. Default: `false`.
 
+### `env`
+
+Allows to specify the executed program's environment. If you want to add environment on top of the current environment use something like:
+
+```js
+env: Object.assign({}, process.env, {
+  YOUR_SECRET: 'not-safe-with-me',
+}),
+```
+
+Default: `process.env`.
+
 ## Global State (?!?!!!?‼️❓)
 
 Yes, by default Scrolex uses global state (`global.scrolex`) within a Node process to keep track of output, 
