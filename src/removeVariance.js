@@ -1,24 +1,16 @@
 const stripAnsi = require('strip-ansi')
 const path      = require('path')
 
-const removeVariance = (str) => {
-  if (str && str.message) {
-    str.message = removeVariance(str.message)
+const removeVariance = (input) => {
+  if (input && input.message) {
+    input.message = removeVariance(input.message)
   }
-  if (`${str}` !== str) {
-    for (let k in str) {
-      str[k] = removeVariance(str[k])
+  if (`${input}` !== input) {
+    for (let k in input) {
+      input[k] = removeVariance(input[k])
     }
-    return str
+    return input
   }
-
-  // // @todo: Remove this hack when stolex no longer adds trailing spinner frames:
-  // cliSpinner.frames.forEach((frame) => {
-  //   while (str.indexOf(frame) !== -1) {
-  //     // console.log({str, frame})
-  //     str = str.replace(frame, '---spinnerframe---')
-  //   }
-  // })
 
   const map = {
     SCROLEX_ROOT: path.resolve(path.join(__dirname, '..')),
@@ -29,14 +21,14 @@ const removeVariance = (str) => {
 
   for (let key in map) {
     let val = map[key]
-    while (str.indexOf(val) !== -1) {
-      str = str.replace(val, `#{${key}}`)
+    while (input.indexOf(val) !== -1) {
+      input = input.replace(val, `#{${key}}`)
     }
   }
 
-  str = stripAnsi(str)
+  input = stripAnsi(input)
 
-  return str
+  return input
 }
 
 module.exports = removeVariance

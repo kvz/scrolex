@@ -342,7 +342,7 @@ class Scrolex {
   _prefix () {
     let buf = ''
 
-    const components = _.clone(this._state.components)
+    const components = _.cloneDeep(this._state.components)
 
     if (this._state.addCommandAsComponent && this._local.lastShowCmd) {
       components.push(this._local.lastShowCmd)
