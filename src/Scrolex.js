@@ -163,7 +163,6 @@ class Scrolex {
   }
 
   exe (origArgs, cb) {
-    this._resetLocalState()
     const { modArgs, cmd, fullCmd, showCmd } = this._normalizeArgs(origArgs)
     this._local.lastShowCmd = showCmd
     this._local.lastFullCmd = fullCmd
