@@ -117,13 +117,20 @@ scrolex.exe('ls -al')
   })
 ```
 
+## Options
+
+### `fatal`
+
+If set to `true`, whenever `exe` yields a non-zero exit code, the whole process stops with a dump of the combined
+stderr & stdout on-screen. Useful for shell-scripting tasks. Default: `false`.
+
 ## Global State (?!?!!!?‼️❓)
 
 Yes, by default Scrolex uses global state (`global.scrolex`) within a Node process to keep track of output, 
-in addition some options can/will be re-used across calls, such as `components` and `mode`. This makes
-sure consequent calls can be lightweight, as well as the output looking consistent.
+in addition options can/will be re-used across calls, such as `components` and `mode`. This makes
+that consequent calls can be lightweight, as well as the output looking consistent.
 
-If you'd rather ditch convenience in favor of strictness, or this trick causes a hard time testing, 
+If you'd rather ditch convenience in favor of strictness, or this causes a hard time testing, 
 you are welcome to pass in your own state object, and Scrolex will happily use that instead:
 
 ```js
@@ -137,6 +144,15 @@ You can even pass a new state object each time to avoid any kind of magic inheri
 ```js
 const myLocalStateObject = {}
 scrolex.exe('ls -al', { })
+```
+
+Options from previous calls will be inherited, but if you'd rather set options separately you
+can do so via:
+
+```js
+scrolex.setOpts({
+  addCommandAsComponent: true
+})
 ```
 
 ## Todo

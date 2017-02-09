@@ -6,10 +6,38 @@ Unreleased and unplanned todos
 
 - [ ] Fix bug where output adds a final progress indicator
 
-## v0.0.13
+## v0.0.17
 
 Released: TBA.
-[Diff](https://github.com/kvz/scrolex/compare/v0.0.12...master).
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.16...master).
+
+## v0.0.16
+
+Released: 2017-02-09.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.16...v0.0.15).
+
+- [x] Add `setOpts` command
+- [x] Fix bug where spinner would keep running if 2 commands are executed
+
+## v0.0.15
+
+Released: 2017-02-08.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.15...v0.0.14).
+
+- [x] Add README and demo
+- [x] Add global state
+
+## v0.0.14
+
+Released: 2017-02-03.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.14...v0.0.13).
+
+- [x] Bugfixes
+
+## v0.0.13
+
+Released: 2017-02-02.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.13...v0.0.12).
 
 - [x] Introduce `silent` mode
 
