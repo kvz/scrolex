@@ -29,8 +29,11 @@ scrolex.exe('ls -al', (err, stdout) => {
     scrolex.stick('I stick around: p')
     scrolex.stick('I stick around: q')
 
-    scrolex.failure('oh noes')
-    process.exit(0)
+    scrolex.exe('ls -al', { mode: 'passthru' }, (err, stdout) => {
+      if (err) { throw err }
+      scrolex.failure('oh noes')
+      process.exit(0)
+    })
 
     // ;(async () => {
     //   try {

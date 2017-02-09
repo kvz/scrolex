@@ -37,7 +37,7 @@ class Scrolex {
       cbPreLinefeed        : (type, line, { flush = false, code = undefined }, callback) => { return callback(null, line) },
       cleanupTmpFiles      : true,
       cwd                  : process.cwd(),
-      indent               : 4,
+      indent               : 3,
       interval             : process.env.SCROLEX_INTERVAL || cliSpinner.interval,
       tmpFileTemplates     : {
         stdout  : `${osTmpdir()}/scrolex-%showCmd%-stdout-%uuid%.log`,
@@ -79,7 +79,7 @@ class Scrolex {
       opts.components = opts.components.replace(/>>+/g, '>').split(/\s*>\s*/)
     }
 
-    if (!opts.indent) {
+    if ('indent' in opts && !opts.indent) {
       opts.indent = 0
     }
 
@@ -343,14 +343,14 @@ class Scrolex {
     }
 
     if (this._opts.mode === 'passthru') {
-      buf += `\u276f `
+      buf += ` \u276f `
     }
 
     components.forEach((component) => {
       buf += `${chalk.dim(component)} \u276f `
     })
 
-    buf = buf.trim()
+    buf = buf.replace(/\s+$/, '')
 
     return buf
   }
@@ -360,9 +360,8 @@ class Scrolex {
       return
     }
     this._opts.cbPreLinefeed(type, line, { flush, code }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
-      let stripped
       if (modifiedLine) {
-        stripped = stripAnsi(modifiedLine.trim())
+        let stripped = stripAnsi(modifiedLine.trim())
         this._global.lastLine = stripped
         this._global.lastLineIdx++
       }
@@ -421,7 +420,6 @@ class Scrolex {
         let parts = this._global.lastLineFrame.trim().split(' ')
         parts.shift()
         let lastLineFrame = parts.join(' ')
-        // console.log({p: 1, l: this._global.lastLineFrame, 'x': 'henk'})
         if (lastLineFrame) {
           this.scrollerClear()
           this.scrollerWrite(` ${logSymbols.success} ${lastLineFrame}`)
@@ -439,13 +437,13 @@ class Scrolex {
       if (haveNewLine) {
         // Just write to stdout (or stderr)
         buff += indentString(`${this._global.lastLine}`, this._opts.indent)
-        this._global.lastLine = ''
+        this._global.lastLine          = ''
         this._global.lastStickyLineIdx = this._global.lastLineIdx
 
         if (prefixChanged) {
-          process[type].write(`\n${prefix}\n\n`)
+          process[type].write(`${prefix}\n`)
         } else if (prefixNew) {
-          process[type].write(`${prefix}\n\n`)
+          process[type].write(`${prefix}\n`)
         }
         process[type].write(`${buff}\n`)
       }

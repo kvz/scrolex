@@ -5,7 +5,6 @@ Object {
     "b",
     "c",
   ],
-  "indent": 0,
   "mode": "singlescroll",
 }
 `;
@@ -13,8 +12,8 @@ Object {
 exports[`ScrolexExports exe should accept async/await 1`] = `
 "
 
-Starting with runs=1, interval=1000, crash=true
-Doing thing 1. fakecmd with runs=1, interval=1000, crash=true done.
+   Starting with runs=1, interval=1000, crash=true
+   Doing thing 1. fakecmd with runs=1, interval=1000, crash=true done.
 
 . Fault while executing \"FAKECMD_CRASH=1 FAKECMD_RUNS=1 node #{SCROLEX_ROOT}/src/fakecmd.js\". Exit code: 1"
 `;
@@ -40,8 +39,8 @@ Doing thing 2. fakecmd with runs=2, interval=1000, crash=false done."
 exports[`ScrolexExports exe should accept async/await and catch an error 1`] = `
 [Error: 
 
-Starting with runs=1, interval=1000, crash=true
-Doing thing 1. fakecmd with runs=1, interval=1000, crash=true done.
+   Starting with runs=1, interval=1000, crash=true
+   Doing thing 1. fakecmd with runs=1, interval=1000, crash=true done.
 
 . Fault while executing "FAKECMD_CRASH=1 FAKECMD_RUNS=1 node #{SCROLEX_ROOT}/src/fakecmd.js". Exit code: 1]
 `;
