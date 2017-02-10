@@ -23,7 +23,7 @@ scrolex.exe('ls -al', (err, stdout) => {
   scrolex.scroll('I get overwritten: g (except the prefix changed, so i stick around, after all)')
   scrolex.exe(`node ${__dirname}/fakecmd.js ${runs} ${interval}`, { components: 'myapp>install' }, (err, stdout) => {
     if (err) { throw err }
-    scrolex.scroll('I get overwritten: h')
+    scrolex.stick('I stick around: h')
     scrolex.scroll('I get overwritten: i')
     scrolex.scroll('I get overwritten: k')
     scrolex.scroll('I get overwritten: l')

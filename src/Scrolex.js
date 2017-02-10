@@ -412,10 +412,12 @@ class Scrolex {
       frame = cliSpinner.frames[this._global.lastFrameCnt++ % cliSpinner.frames.length]
     }
     if (flush) {
-      if (code === 0 || code === undefined || code === null) {
+      if (code === undefined || code === null) {
+        frame = figures.pointerSmall
+      } else if (code === 0) {
         frame = logSymbols.success
         if (this._opts.announce === true) {
-          if (code === 0 && this._local.lastFullCmd) {
+          if (this._local.lastFullCmd) {
             announced = `Successfully executed: ${this._local.lastFullCmd}`
           }
         }
@@ -452,7 +454,7 @@ class Scrolex {
         let lastLineFrame = parts.join(' ')
         if (lastLineFrame) {
           this.scrollerClear()
-          this.scrollerWrite(` ${logSymbols.success} ${lastLineFrame}`)
+          this.scrollerWrite(` ${figures.pointerSmall} ${lastLineFrame}`)
           this.scrollerStick()
           this._global.lastLine          = ''
           this._global.lastStickyLineIdx = this._global.lastLineIdx
