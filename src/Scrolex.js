@@ -165,6 +165,10 @@ class Scrolex {
     this._outputLine('stderr', str, { flush: true, code: 1 })
   }
 
+  success (str) {
+    this._outputLine('stdout', str, { flush: true, code: 0 })
+  }
+
   exe (origArgs, cb) {
     const { modArgs, cmd, fullCmd, showCmd } = this._normalizeArgs(origArgs)
     this._local.lastShowCmd = showCmd
@@ -507,28 +511,28 @@ class Scrolex {
       results.combined = null
     }
 
-    let retErr        = null
-    let strAllErrors  = ''
-    let errorMessages = []
+    let objErrors = null
+    let strErrors = ''
+    let arrErrors = []
     if (code !== 0) {
       if (results.combined) {
-        errorMessages.push(`\n\n${indentString(results.combined, this._opts.indent)}\n\n`)
+        arrErrors.push(`\n\n${indentString(results.combined, this._opts.indent)}\n\n`)
       }
 
-      errorMessages.push(`Fault while executing "${fullCmd}"`)
+      arrErrors.push(`Fault while executing "${fullCmd}"`)
       if (spawnErr) {
-        errorMessages.push(`Spawn error: ${spawnErr}`)
+        arrErrors.push(`Spawn error: ${spawnErr}`)
       }
       if (code !== 0) {
-        errorMessages.push(`Exit code: ${code}`)
+        arrErrors.push(`Exit code: ${code}`)
       }
       if (signal) {
-        errorMessages.push(`Signal: ${signal}`)
+        arrErrors.push(`Signal: ${signal}`)
       }
     }
-    if (errorMessages.length) {
-      strAllErrors = errorMessages.join('. ')
-      retErr       = new Error(strAllErrors)
+    if (arrErrors.length) {
+      strErrors = arrErrors.join('. ')
+      objErrors = new Error(strErrors)
     }
 
     const flush = true
@@ -539,21 +543,22 @@ class Scrolex {
       this._stopAnimation()
     }
 
-    if (strAllErrors.length > 0) {
+    if (strErrors.length > 0) {
       if (this._opts.mode !== 'silent') {
-        process.stderr.write(`${strAllErrors}\n`)
+        process.stderr.write(`${strErrors}\n`)
       }
       if (this._opts.fatal === true) {
+        promiseReject(objErrors) // <-- mostly to avoid: DeprecationWarning: Unhandled promise rejections are deprecated
         process.exit(1)
       }
     }
 
     if (cb) {
-      return cb(retErr, results.stdout)
+      return cb(objErrors, results.stdout)
     }
 
-    if (retErr) {
-      return promiseReject(retErr)
+    if (objErrors) {
+      return promiseReject(objErrors)
     }
 
     return promiseResolve(results.stdout)
@@ -590,4 +595,8 @@ module.exports.stick = (str, opts = {}) => {
 
 module.exports.failure = (str, opts = {}) => {
   return new Scrolex(opts).failure(str)
+}
+
+module.exports.success = (str, opts = {}) => {
+  return new Scrolex(opts).success(str)
 }

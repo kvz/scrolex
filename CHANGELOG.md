@@ -11,6 +11,7 @@ Unreleased and unplanned todos
 Released: TBA.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.16...master).
 
+- [x] Introduce `success()`
 - [x] Introduce a neutral sticky frame for when there is no exit `code`
 - [x] Truncate by default when scrolling
 - [x] Fix bug that could lead to duplicate sticky lines

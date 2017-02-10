@@ -35,6 +35,7 @@ scrolex.exe('ls -al', (err, stdout) => {
 
     scrolex.exe('ls -al', { mode: 'passthru' }, (err, stdout) => {
       if (err) { throw err }
+      scrolex.success('oh yes')
       scrolex.failure('oh noes')
       process.exit(0)
     })
