@@ -6,10 +6,17 @@ Unreleased and unplanned todos
 
 - [ ] 
 
-## v0.0.18
+## v0.0.19
 
 Released: TBA.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.17...master).
+
+- [x] Fix `persistOpts` bug
+
+## v0.0.18
+
+Released: 2017-02-11.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.18...v0.0.17).
 
 - [x] Fix `persistOpts` bug
 
