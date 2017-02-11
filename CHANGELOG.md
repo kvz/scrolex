@@ -6,10 +6,15 @@ Unreleased and unplanned todos
 
 - [ ] 
 
-## v0.0.19
+## v0.0.20
 
 Released: TBA.
-[Diff](https://github.com/kvz/scrolex/compare/v0.0.17...master).
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.19...master).
+
+## v0.0.19
+
+Released: 2017-02-11.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.18...v0.0.19).
 
 - [x] Use older deps so it still works on legacy nodes (https://travis-ci.org/kvz/lanyon/jobs/200646703#L1043)
 - [x] Fix `persistOpts` bug
