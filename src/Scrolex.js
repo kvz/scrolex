@@ -582,7 +582,7 @@ module.exports.exe = (args, opts = {}, cb) => {
 module.exports.persistOpts = (opts = {}) => {
   const scrolex = new Scrolex(opts)
   scrolex.persistOpts(opts)
-  return this
+  return module.exports
 }
 
 module.exports.scroll = (str, opts = {}) => {

@@ -11,7 +11,7 @@ Unreleased and unplanned todos
 Released: TBA.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.17...master).
 
-- [ ] 
+- [x] Fix `persistOpts` bug
 
 ## v0.0.17
 
