@@ -6,10 +6,17 @@ Unreleased and unplanned todos
 
 - [ ] 
 
-## v0.0.17
+## v0.0.18
 
 Released: TBA.
-[Diff](https://github.com/kvz/scrolex/compare/v0.0.16...master).
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.17...master).
+
+- [ ] 
+
+## v0.0.17
+
+Released: 2017-02-11.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.17...v0.0.16).
 
 - [x] Introduce `success()`
 - [x] Introduce a neutral sticky frame for when there is no exit `code`
