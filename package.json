@@ -24,9 +24,9 @@
     "release:minor": "env SEMANTIC=minor npm run release",
     "release:patch": "env SEMANTIC=patch npm run release",
     "release": "npm version ${SEMANTIC:-patch} -m \"Release %s\" && npm-run-all build push npublish",
-    "test:update": "npm run build && npm run jest:update",
+    "test:update": "npm-run-all build jest:update",
     "test:watcher": "npm test -- --watch",
-    "test": "npm run build && npm run jest",
+    "test": "npm-run-all build jest",
     "upgrade:modules": "next-update --keep true --tldr"
   },
   "repository": {
