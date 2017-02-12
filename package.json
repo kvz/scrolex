@@ -6,7 +6,7 @@
   "jest": {
     "verbose": true,
     "testPathDirs": [
-      "src/"
+      "lib/"
     ]
   },
   "scripts": {
