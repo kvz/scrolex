@@ -15,4 +15,5 @@ script:
 - if [ "${TRAVIS_NODE_VERSION}" -ge 4 ]; then npm run lint; fi
 # Jest does not work on older node
 - if [ "${TRAVIS_NODE_VERSION}" -ge 4 ]; then npm run test; fi
-- node lib/playground.js
+- if [ "${TRAVIS_NODE_VERSION}" -ge 4 ]; then node src/playground.js; fi
+- if [ "${TRAVIS_NODE_VERSION}" -lt 4 ]; then npm install -g babel-cli && babel-node lib/playground.js; fi
