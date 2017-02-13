@@ -6,10 +6,17 @@ Unreleased and unplanned todos
 
 - [ ] 
 
-## v0.0.20
+## v0.0.21
 
 Released: TBA.
-[Diff](https://github.com/kvz/scrolex/compare/v0.0.19...master).
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.20...master).
+
+- [ ]
+
+## v0.0.20
+
+Released: 2017-02-13.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.19...v0.0.20).
 
 - [x] Use a String.repeat polyfil for Node 0.12 compat
 - [x] Instead of truncating lines, break them off and insert new line at breakpoint (in case the line is sticky)
