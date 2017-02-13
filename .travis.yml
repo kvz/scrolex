@@ -12,8 +12,8 @@ node_js:
 - "0.10"
 script:
 # eslint does not work on older node
-- '[ "$(bc <<< "${TRAVIS_NODE_VERSION} >= 4")" -eq 1 ]; then npm run lint; fi'
+- 'if [ "$(bc <<< "${TRAVIS_NODE_VERSION} >= 4")" -eq 1 ]; then npm run lint; fi'
 # Jest does not work on older node
-- '[ "$(bc <<< "${TRAVIS_NODE_VERSION} >= 4")" -eq 1 ]; then npm run test; fi'
-- '[ "$(bc <<< "${TRAVIS_NODE_VERSION} > 4")" -eq 1 ]; then node src/playground.js; fi'
-- '[ "$(bc <<< "${TRAVIS_NODE_VERSION} <= 4")" -eq 1 ]; then npm run build && node lib/playground.js; fi'
+- 'if [ "$(bc <<< "${TRAVIS_NODE_VERSION} >= 4")" -eq 1 ]; then npm run test; fi'
+- 'if [ "$(bc <<< "${TRAVIS_NODE_VERSION} > 4")" -eq 1 ]; then node src/playground.js; fi'
+- 'if [ "$(bc <<< "${TRAVIS_NODE_VERSION} <= 4")" -eq 1 ]; then npm run build && node lib/playground.js; fi'
