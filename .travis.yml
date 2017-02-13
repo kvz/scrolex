@@ -1,4 +1,8 @@
 language: node_js
+addons:
+  apt:
+    sources:
+    - bc
 sudo: false
 cache:
   apt: true
