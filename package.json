@@ -1,10 +1,10 @@
 {
   "name": "scrolex",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Execute commands, scroll back the stdout &amp; stderr, prefix by user-defined categories",
   "main": "lib/Scrolex.js",
-  "engines" : {
-    "node" : ">=0.10.48"
+  "engines": {
+    "node": ">=0.10.48"
   },
   "jest": {
     "verbose": true,
