@@ -11,6 +11,7 @@ Unreleased and unplanned todos
 Released: TBA.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.19...master).
 
+- [x] Use a String.repeat polyfil for Node 0.12 compat
 - [x] Instead of truncating lines, break them off and insert new line at breakpoint (in case the line is sticky)
 
 ## v0.0.19
