@@ -447,9 +447,11 @@ class Scrolex {
           text = announced
         }
 
-        if (this._opts.truncate === true) {
+        if (this._opts.truncate === true && !makeThisStick) {
           let len = this._countSymbols(buff)
           buff = cliTruncate(`${buff}${text}`, process.stdout.columns - len)
+        } else {
+          buff = `${buff}${text}`
         }
       }
       if (makePrevStick) {

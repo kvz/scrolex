@@ -11,6 +11,8 @@ Unreleased and unplanned todos
 Released: TBA.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.19...master).
 
+- [x] Instead of truncating lines, break them off and insert new line at breakpoint (in case the line is sticky)
+
 ## v0.0.19
 
 Released: 2017-02-11.
