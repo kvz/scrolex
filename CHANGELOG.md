@@ -11,7 +11,7 @@ Unreleased and unplanned todos
 Released: TBA.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.20...master).
 
-- [ ]
+- [ ] To debug trailing checkmark: Try a longrunning command with announce, and then quickly some sticky lines.
 
 ## v0.0.20
 
