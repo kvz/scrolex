@@ -11,6 +11,7 @@ scrolex.persistOpts({
 })
 
 let opts1 = {
+  showCmd              : 'dir',
   addCommandAsComponent: true,
   cbPreLinefeed        : function (type, line, { flush = false, code = undefined }, callback) {
     let parts = (line + '').split(/\s+/)
@@ -19,6 +20,7 @@ let opts1 = {
 
     this._local.lastShowCmd = leader
 
+    // if you return null in the second argument, the line won't be output at all
     return callback(null, remain)
   },
 }
