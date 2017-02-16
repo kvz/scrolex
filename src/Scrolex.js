@@ -31,6 +31,7 @@ class Scrolex {
 
     const defaultOpts = {
       components           : [],
+      extraComponents      : [],
       mode                 : process.env.SCROLEX_MODE || 'singlescroll',
       addCommandAsComponent: false,
       showCmd              : null,
@@ -86,6 +87,9 @@ class Scrolex {
   _normalizeOpts (opts) {
     if (`${opts.components}` === opts.components) {
       opts.components = opts.components.replace(/>>+/g, '>').split(/\s*>\s*/)
+    }
+    if (`${opts.extraComponents}` === opts.extraComponents) {
+      opts.extraComponents = opts.extraComponents.replace(/>>+/g, '>').split(/\s*>\s*/)
     }
 
     if ('indent' in opts && !opts.indent) {
@@ -352,7 +356,7 @@ class Scrolex {
   _prefix () {
     let buf = ''
 
-    const components = _.cloneDeep(this._opts.components)
+    let components = _.cloneDeep(this._opts.components).concat(_.cloneDeep(this._opts.extraComponents))
 
     if (this._opts.addCommandAsComponent && this._local.lastShowCmd) {
       components.push(this._local.lastShowCmd)

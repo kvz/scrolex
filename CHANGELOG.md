@@ -13,6 +13,13 @@ Released: TBA.
 
 - [ ] 
 
+## v0.0.24
+
+Released: 2017-02-16.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.23...v0.0.24).
+
+- [x] Add support for `extraComponents`
+
 ## v0.0.23
 
 Released: 2017-02-16.
