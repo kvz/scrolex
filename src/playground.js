@@ -12,7 +12,7 @@ scrolex.persistOpts({
   announce  : true,
 })
 
-scrolex.exe('ls -al', (err, stdout) => {
+scrolex.exe(['ls', '-al'], (err, stdout) => {
   if (err) { throw err }
   scrolex.scroll('I get overwritten: a')
   scrolex.scroll('I get overwritten: b')

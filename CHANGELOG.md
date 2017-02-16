@@ -13,6 +13,13 @@ Released: TBA.
 
 - [ ] 
 
+## v0.0.22
+
+Released: 2017-02-16.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.21...v0.0.22).
+
+- [x] Fix bug where fullCmd did not include first item of passed array
+
 ## v0.0.21
 
 Released: 2017-02-13.

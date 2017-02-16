@@ -103,7 +103,7 @@ class Scrolex {
   }
 
   _normalizeArgs (origArgs) {
-    let modArgs = origArgs
+    let modArgs = _.clone(origArgs)
     let cmd     = ''
     let showCmd = ''
     let fullCmd = ''
