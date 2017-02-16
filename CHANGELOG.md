@@ -18,6 +18,7 @@ Released: TBA.
 Released: 2017-02-13.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.20...v0.0.21).
 
+- [x] Fix bug that truncated lines too soon
 - [x] Fix bug that could leave trailing checkmarks
 
 ## v0.0.20

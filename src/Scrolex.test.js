@@ -15,8 +15,11 @@ describe('Scrolex', () => {
     })
   })
   describe('_countSymbols', () => {
-    it('should count symbpols', () => {
+    it('should count symbols', () => {
       expect(s._countSymbols(` ⢄ \u001b[2mmyapp\u001b[22m`)).toBe(8)
+    })
+    it('should count symbols 2', () => {
+      expect(s._countSymbols(` ⡠ myapp › prepare ›`)).toBe(20)
     })
   })
 })
