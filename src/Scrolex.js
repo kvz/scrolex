@@ -3,6 +3,7 @@ const cliSpinner     = require('cli-spinners').dots10
 const logSymbols     = require('log-symbols')
 // const cliTruncate = require('cli-truncate')
 const chalk          = require('chalk')
+const crypto         = require('crypto')
 const path           = require('path')
 const osTmpdir       = require('os-tmpdir')
 const fs             = require('fs')
@@ -32,6 +33,7 @@ class Scrolex {
       components           : [],
       mode                 : process.env.SCROLEX_MODE || 'singlescroll',
       addCommandAsComponent: false,
+      showCmd              : null,
       announce             : false,
       shell                : false,
       dryrun               : false,
@@ -43,9 +45,9 @@ class Scrolex {
       indent               : 3,
       interval             : process.env.SCROLEX_INTERVAL || cliSpinner.interval,
       tmpFileTemplates     : {
-        stdout  : `${osTmpdir()}/scrolex-%showCmd%-stdout-%uuid%.log`,
-        stderr  : `${osTmpdir()}/scrolex-%showCmd%-stderr-%uuid%.log`,
-        combined: `${osTmpdir()}/scrolex-%showCmd%-combined-%uuid%.log`,
+        stdout  : `${osTmpdir()}/scrolex-%fullCmdMd5%-stdout-%uuid%.log`,
+        stderr  : `${osTmpdir()}/scrolex-%fullCmdMd5%-stderr-%uuid%.log`,
+        combined: `${osTmpdir()}/scrolex-%fullCmdMd5%-combined-%uuid%.log`,
       },
     }
 
@@ -171,7 +173,7 @@ class Scrolex {
 
   exe (origArgs, cb) {
     const { modArgs, cmd, fullCmd, showCmd } = this._normalizeArgs(origArgs)
-    this._local.lastShowCmd = showCmd
+    this._local.lastShowCmd = this._opts.showCmd || showCmd
     this._local.lastFullCmd = fullCmd
 
     const spawnOpts = this._spawnOpts(this._opts)
@@ -193,7 +195,10 @@ class Scrolex {
 
     // Put the PID into the file locations as a late normalization step
     this._withTypes(this._local.tmpFiles, (val, type) => {
-      return this._opts.tmpFileTemplates[type].replace('%uuid%', uuidV4()).replace('%showCmd%', showCmd)
+      return this._opts.tmpFileTemplates[type]
+        .replace('%uuid%', uuidV4())
+        .replace('%showCmd%', showCmd)
+        .replace('%fullCmdMd5%', crypto.createHash('md5').update(fullCmd).digest('hex'))
     }, [ 'stdout', 'stderr', 'combined' ])
 
     // Reset/empty out files
@@ -370,7 +375,7 @@ class Scrolex {
     if (this._opts.mode === 'silent') {
       return
     }
-    this._opts.cbPreLinefeed(type, line, { flush, code }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
+    this._opts.cbPreLinefeed.bind(this)(type, line, { flush, code }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
       if (modifiedLine) {
         let stripped = stripAnsi(modifiedLine.trim())
         this._global.lastLine = stripped

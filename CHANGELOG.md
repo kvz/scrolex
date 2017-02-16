@@ -13,6 +13,13 @@ Released: TBA.
 
 - [ ] 
 
+## v0.0.23
+
+Released: 2017-02-16.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.22...v0.0.23).
+
+- [x] Allow to change the `showCmd` via `opts` or `cbPreLinefeed`
+
 ## v0.0.22
 
 Released: 2017-02-16.

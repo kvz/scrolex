@@ -4,15 +4,27 @@ const interval = process.argv[4] || process.env.FAKECMD_INTERVAL || 1000
 
 const scrolex = require('./Scrolex')
 
-scrolex.stick('Welcome')
-
 scrolex.persistOpts({
   mode      : mode,
   components: 'myapp>prepare',
   announce  : true,
 })
 
-scrolex.exe(['ls', '-al'], (err, stdout) => {
+let opts1 = {
+  addCommandAsComponent: true,
+  cbPreLinefeed        : function (type, line, { flush = false, code = undefined }, callback) {
+    let parts = (line + '').split(/\s+/)
+    let leader = parts.shift()
+    let remain = parts.join(' ')
+
+    this._local.lastShowCmd = leader
+
+    return callback(null, remain)
+  },
+}
+
+scrolex.stick('Welcome')
+scrolex.exe(['ls', '-al'], opts1, (err, stdout) => {
   if (err) { throw err }
   scrolex.scroll('I get overwritten: a')
   scrolex.scroll('I get overwritten: b')
