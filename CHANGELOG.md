@@ -6,12 +6,19 @@ Unreleased and unplanned todos
 
 - [ ] 
 
-## v0.0.21
+## master
 
 Released: TBA.
 [Diff](https://github.com/kvz/scrolex/compare/v0.0.20...master).
 
-- [ ] To debug trailing checkmark: Try a longrunning command with announce, and then quickly some sticky lines.
+- [ ] 
+
+## v0.0.21
+
+Released: 2017-02-13.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.20...v0.0.21).
+
+- [x] Fix bug that could leave trailing checkmarks
 
 ## v0.0.20
 

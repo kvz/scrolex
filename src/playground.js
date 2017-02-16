@@ -18,7 +18,7 @@ scrolex.exe('ls -al', (err, stdout) => {
   scrolex.scroll('I get overwritten: b')
   scrolex.scroll('I get overwritten: c')
   scrolex.scroll('I get overwritten: d')
-  scrolex.stick('I stick around: e -- very long line -- will get truncated -- very long line -- will get truncated -- very long line -- will get truncated -- very long line -- will get truncated -- very long line -- will get truncated')
+  scrolex.stick('I stick around: e -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line')
   scrolex.scroll('I get overwritten: f')
   scrolex.scroll('I get overwritten: g (except the prefix changed, so i stick around, after all)')
   scrolex.exe(`node ${__dirname}/fakecmd.js ${runs} ${interval}`, { components: 'myapp>install' }, (err, stdout) => {
@@ -37,6 +37,7 @@ scrolex.exe('ls -al', (err, stdout) => {
       if (err) { throw err }
       scrolex.success('oh yes')
       scrolex.failure('oh noes')
+      scrolex.scroll('I stick around: e -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line -- very long line')
       process.exit(0)
     })
 
@@ -50,3 +51,6 @@ scrolex.exe('ls -al', (err, stdout) => {
     // })()
   })
 })
+
+scrolex.stick('I stick around: 0')
+scrolex.stick('I stick around: 1')

@@ -406,6 +406,7 @@ class Scrolex {
     let announced         = ''
     let makePrevStick     = prefixChanged && !stuckPreviousLine
     let makeThisStick     = flush && haveNewLine
+    let concludingFrame   = false
 
     if (this._global.lastLine === null) {
       return
@@ -418,8 +419,10 @@ class Scrolex {
     if (flush) {
       if (code === undefined || code === null) {
         frame = figures.pointerSmall
+        concludingFrame = true
       } else if (code === 0) {
         frame = logSymbols.success
+        concludingFrame = true
         if (this._opts.announce === true) {
           if (this._local.lastFullCmd) {
             announced = `Successfully executed: ${this._local.lastFullCmd}`
@@ -427,6 +430,7 @@ class Scrolex {
         }
       } else {
         frame = logSymbols.error
+        concludingFrame = true
         if (this._opts.announce === true && this._local.lastFullCmd) {
           announced = `Failed to execute: ${this._local.lastFullCmd}`
         }
@@ -434,8 +438,8 @@ class Scrolex {
     }
 
     if (this._opts.mode === 'singlescroll') {
-      buff += ` ${frame} `
       if (haveNewLine) {
+        buff += ` ${frame} `
         if (prefix) {
           buff += `${prefix} `
         }
@@ -453,7 +457,10 @@ class Scrolex {
         } else {
           buff = `${buff}${text}`
         }
+      } else if (!concludingFrame) {
+        buff += ` ${frame} `
       }
+
       if (makePrevStick) {
         let parts = this._global.lastLineFrame.trim().split(' ')
         parts.shift()
@@ -467,7 +474,9 @@ class Scrolex {
         }
       }
       // this.scrollerClear()
-      this.scrollerWrite(buff)
+      if (buff) {
+        this.scrollerWrite(buff)
+      }
       if (makeThisStick) {
         this.scrollerStick()
         this._global.lastLine          = ''
