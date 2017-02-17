@@ -9,9 +9,16 @@ Unreleased and unplanned todos
 ## master
 
 Released: TBA.
-[Diff](https://github.com/kvz/scrolex/compare/v0.0.25...master).
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.26...master).
 
 - [ ] 
+
+## v0.0.26
+
+Released: 2017-02-17.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.25...v0.0.26).
+
+- [x] Add additional `is-travis` check as it seems to have a TTY
 
 ## v0.0.25
 

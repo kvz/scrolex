@@ -15,6 +15,7 @@ const indentString   = require('./indentString')
 const stripAnsi      = require('strip-ansi')
 const cliTruncate    = require('cli-truncate')
 const figures        = require('figures')
+const isTravis       = require('is-travis')
 
 class Scrolex {
   constructor (opts = {}) {
@@ -27,6 +28,10 @@ class Scrolex {
       if (envKey in process.env) {
         return process.env[envKey]
       }
+    }
+
+    if (isTravis === true) {
+      return 'passthru'
     }
 
     if (process.stdout.isTTY !== true) {
