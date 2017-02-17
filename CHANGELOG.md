@@ -9,9 +9,16 @@ Unreleased and unplanned todos
 ## master
 
 Released: TBA.
-[Diff](https://github.com/kvz/scrolex/compare/v0.0.20...master).
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.25...master).
 
 - [ ] 
+
+## v0.0.25
+
+Released: 2017-02-17.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.24...v0.0.25).
+
+- [x] Default to `passthru` `mode` when there is no TTY (such as on Travis)
 
 ## v0.0.24
 

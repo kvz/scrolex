@@ -21,6 +21,21 @@ class Scrolex {
     this._applyOpts(opts)
   }
 
+  defaultMode (envKeys = ['SCROLEX_MODE']) {
+    for (let i in envKeys) {
+      let envKey = envKeys[i]
+      if (envKey in process.env) {
+        return process.env[envKey]
+      }
+    }
+
+    if (process.stdout.isTTY !== true) {
+      return 'passthru'
+    }
+
+    return 'singlescroll'
+  }
+
   _applyOpts (opts = {}) {
     if ('state' in opts) {
       this._global = opts.state
@@ -32,7 +47,7 @@ class Scrolex {
     const defaultOpts = {
       components           : [],
       extraComponents      : [],
-      mode                 : process.env.SCROLEX_MODE || 'singlescroll',
+      mode                 : this.defaultMode(),
       addCommandAsComponent: false,
       showCmd              : null,
       announce             : false,
