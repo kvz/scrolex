@@ -9,9 +9,16 @@ Unreleased and unplanned todos
 ## master
 
 Released: TBA.
-[Diff](https://github.com/kvz/scrolex/compare/v0.0.26...master).
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.27...master).
 
 - [ ] 
+
+## v0.0.27
+
+Released: 2017-02-22.
+[Diff](https://github.com/kvz/scrolex/compare/v0.0.26...v0.0.27).
+
+- [x] Support non-strings being passed into `failure` (and others)
 
 ## v0.0.26
 

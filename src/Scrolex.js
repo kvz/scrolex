@@ -5,6 +5,7 @@ const logSymbols     = require('log-symbols')
 const chalk          = require('chalk')
 const crypto         = require('crypto')
 const path           = require('path')
+const util           = require('util')
 const osTmpdir       = require('os-tmpdir')
 const fs             = require('fs')
 // const debug       = require('depurar')('scrolex')
@@ -399,6 +400,11 @@ class Scrolex {
     if (this._opts.mode === 'silent') {
       return
     }
+
+    if (line !== `${line}`) {
+      line = util.format(line)
+    }
+
     this._opts.cbPreLinefeed.bind(this)(type, line, { flush, code }, (err, modifiedLine) => { // eslint-disable-line handle-callback-err
       if (modifiedLine) {
         let stripped = stripAnsi(modifiedLine.trim())

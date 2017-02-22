@@ -24,6 +24,7 @@ let opts1 = {
   },
 }
 
+scrolex.failure(['one', 'two', new Error('three')])
 scrolex.stick('Welcome')
 scrolex.exe(['ls', '-al'], opts1, (err, stdout) => {
   if (err) { throw err }
